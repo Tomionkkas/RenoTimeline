@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { UserX } from 'lucide-react';
 import TransitionWrapper from './TransitionWrapper';
 
 interface AuthFormProps {
@@ -27,10 +26,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   // Monitor user state changes
   useEffect(() => {
     if (user) {
-      // Natural delay before calling success callback
       setTimeout(() => {
         onSuccess?.();
-      }, 200);
+      }, 100);
     }
   }, [user, onSuccess]);
 
@@ -78,137 +76,124 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     signInAsGuest();
     
     toast({
-      title: 'Tryb gościa',
-      description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
+      title: 'Tryb gościa aktywowany',
+      description: 'Możesz korzystać z aplikacji, ale dane nie będą zachowane po odświeżeniu.',
     });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <TransitionWrapper show={!user} className="w-full max-w-md" exitDuration={200}>
-        <div className="space-y-6 stagger-animation">
-          {/* Main Auth Card */}
-          <Card className="smooth-entrance">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl gradient-text">
-                {isLogin ? 'Logowanie' : 'Rejestracja'}
-              </CardTitle>
-              <CardDescription>
-                {isLogin 
-                  ? 'Zaloguj się do swojego konta RenoTimeline'
-                  : 'Utwórz nowe konto RenoTimeline'
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Imię</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required={!isLogin}
-                        placeholder="Twoje imię"
-                        className="transition-all duration-300 focus:scale-105"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Nazwisko</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        required={!isLogin}
-                        placeholder="Twoje nazwisko"
-                        className="transition-all duration-300 focus:scale-105"
-                      />
-                    </div>
+      <TransitionWrapper show={!user} className="w-full max-w-md">
+        <Card className="smooth-entrance">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl gradient-text">
+              {isLogin ? 'Logowanie' : 'Rejestracja'}
+            </CardTitle>
+            <CardDescription>
+              {isLogin 
+                ? 'Zaloguj się do swojego konta RenoTimeline'
+                : 'Utwórz nowe konto RenoTimeline'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Imię</Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required={!isLogin}
+                      placeholder="Twoje imię"
+                      className="transition-all duration-300 focus:scale-105"
+                    />
                   </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="twoj@email.com"
-                    className="transition-all duration-300 focus:scale-105"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nazwisko</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required={!isLogin}
+                      placeholder="Twoje nazwisko"
+                      className="transition-all duration-300 focus:scale-105"
+                    />
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Hasło</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder="Twoje hasło"
-                    minLength={6}
-                    className="transition-all duration-300 focus:scale-105"
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? 'Przetwarzanie...' : (isLogin ? 'Zaloguj się' : 'Zarejestruj się')}
-                </Button>
-              </form>
+              )}
               
-              <div className="mt-4 text-center">
-                <Button
-                  variant="link"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm transition-all duration-300 hover:scale-105"
-                  disabled={loading}
-                >
-                  {isLogin 
-                    ? 'Nie masz konta? Zarejestruj się'
-                    : 'Masz już konto? Zaloguj się'
-                  }
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="twoj@email.com"
+                  className="transition-all duration-300 focus:scale-105"
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Skip Login Card */}
-          <Card className="border-yellow-500/20 bg-yellow-500/5 smooth-entrance">
-            <CardHeader className="text-center pb-3">
-              <CardTitle className="text-lg flex items-center justify-center space-x-2">
-                <UserX className="w-5 h-5 text-yellow-500" />
-                <span>Pomiń logowanie</span>
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Testuj aplikację bez tworzenia konta
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Hasło</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Twoje hasło"
+                  minLength={6}
+                  className="transition-all duration-300 focus:scale-105"
+                />
+              </div>
+              
               <Button 
-                variant="outline" 
-                className="w-full transition-all duration-400 hover:scale-105"
-                onClick={handleSkipLogin}
+                type="submit" 
+                className="w-full btn-primary"
                 disabled={loading}
               >
-                {loading ? 'Ładowanie...' : 'Kontynuuj jako gość'}
+                {loading ? 'Przetwarzanie...' : (isLogin ? 'Zaloguj się' : 'Zarejestruj się')}
               </Button>
-              <p className="text-xs text-gray-500 text-center mt-2">
-                Dane nie będą zachowane po odświeżeniu strony
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            </form>
+            
+            <div className="mt-4 space-y-3 text-center">
+              <Button
+                variant="link"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm transition-all duration-300 hover:scale-105"
+                disabled={loading}
+              >
+                {isLogin 
+                  ? 'Nie masz konta? Zarejestruj się'
+                  : 'Masz już konto? Zaloguj się'
+                }
+              </Button>
+              
+              {!isLogin && (
+                <div className="pt-2 border-t border-gray-800">
+                  <Button 
+                    variant="ghost" 
+                    className="text-sm text-gray-400 hover:text-white transition-all duration-300 hover:scale-105"
+                    onClick={handleSkipLogin}
+                    disabled={loading}
+                  >
+                    Pomiń logowanie i kontynuuj jako gość
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Dane nie będą zachowane po odświeżeniu strony
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </TransitionWrapper>
     </div>
   );

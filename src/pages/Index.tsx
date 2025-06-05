@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import ProtectedRoute from '@/components/Auth/ProtectedRoute';
@@ -38,6 +37,20 @@ const Index = () => {
 
   const isGuestMode = user && 'isGuest' in user;
 
+  // Show guest mode info toast on first render when in guest mode
+  useEffect(() => {
+    if (isGuestMode && !needsOnboarding) {
+      const timer = setTimeout(() => {
+        toast({
+          title: 'Tryb gościa aktywny',
+          description: 'Korzystasz z aplikacji jako gość. Aby zachować swoje dane, utwórz konto.',
+          duration: 5000,
+        });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isGuestMode, needsOnboarding, toast]);
+
   const handleSignOut = async () => {
     if (isGuestMode) {
       exitGuestMode();
@@ -65,7 +78,7 @@ const Index = () => {
             <p className="text-lg">Sprawdzanie konfiguracji...</p>
           </div>
         </div>
-      ) : needsOnboarding && !isGuestMode ? (
+      ) : needsOnboarding ? (
         <div className="natural-fade">
           <OnboardingFlow onComplete={completeOnboarding} />
         </div>
@@ -103,7 +116,7 @@ const Index = () => {
               </h2>
               <p className="text-gray-400">
                 {isGuestMode 
-                  ? 'Testuj funkcje aplikacji. Pamiętaj, że dane nie będą zachowane.'
+                  ? 'Testujesz aplikację jako gość. Dane nie będą zachowane.'
                   : 'Zarządzaj swoimi projektami remontowymi.'
                 }
               </p>

@@ -17,9 +17,9 @@ export const useOnboarding = () => {
         return;
       }
 
-      // Skip onboarding for guest users
+      // For guest users, always show onboarding since they start fresh
       if (isGuestMode) {
-        setNeedsOnboarding(false);
+        setNeedsOnboarding(true);
         setLoading(false);
         return;
       }
