@@ -26,8 +26,8 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
-    status: task?.status || 'todo',
-    priority: task?.priority || 'medium',
+    status: task?.status || 'todo' as const,
+    priority: task?.priority || 'medium' as const,
     due_date: task?.due_date || '',
     estimated_hours: task?.estimated_hours?.toString() || ''
   });
@@ -148,7 +148,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
                 {isEditing ? (
                   <Select 
                     value={formData.status} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'todo' | 'in_progress' | 'review' | 'done' }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -170,7 +170,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
                 {isEditing ? (
                   <Select 
                     value={formData.priority} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as 'low' | 'medium' | 'high' | 'urgent' }))}
                   >
                     <SelectTrigger>
                       <SelectValue />

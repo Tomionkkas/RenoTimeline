@@ -74,7 +74,12 @@ export const useReminders = (taskId?: string) => {
         console.error('Error fetching reminders:', error);
         setError(error.message);
       } else {
-        setReminders(data || []);
+        // Type assertion to ensure proper typing from Supabase
+        const typedData = (data || []).map(item => ({
+          ...item,
+          reminder_type: item.reminder_type as 'email' | 'notification' | 'both'
+        }));
+        setReminders(typedData);
       }
     } catch (err) {
       console.error('Error in fetchReminders:', err);
