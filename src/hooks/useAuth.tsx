@@ -1,6 +1,5 @@
 
 import { useEffect, useState, useCallback } from 'react';
-import { flushSync } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -40,20 +39,16 @@ export const useAuth = () => {
     // Najpierw sprawdź tryb gościa
     const guestUser = checkGuestMode();
     if (guestUser) {
-      flushSync(() => {
-        setUser(guestUser);
-        setLoading(false);
-      });
+      setUser(guestUser);
+      setLoading(false);
       return;
     }
 
     // Get initial session
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      flushSync(() => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      });
+      setUser(session?.user ?? null);
+      setLoading(false);
     };
 
     getSession();
@@ -64,15 +59,11 @@ export const useAuth = () => {
         // Sprawdź czy nie jesteśmy w trybie gościa
         const guestUser = checkGuestMode();
         if (guestUser) {
-          flushSync(() => {
-            setUser(guestUser);
-            setLoading(false);
-          });
+          setUser(guestUser);
+          setLoading(false);
         } else {
-          flushSync(() => {
-            setUser(session?.user ?? null);
-            setLoading(false);
-          });
+          setUser(session?.user ?? null);
+          setLoading(false);
         }
       }
     );
@@ -81,10 +72,8 @@ export const useAuth = () => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'renotimeline_guest_mode') {
         const guestUser = checkGuestMode();
-        flushSync(() => {
-          setUser(guestUser);
-          setLoading(false);
-        });
+        setUser(guestUser);
+        setLoading(false);
       }
     };
 
@@ -122,10 +111,8 @@ export const useAuth = () => {
     // Clear guest mode
     localStorage.removeItem('renotimeline_guest_mode');
     const { error } = await supabase.auth.signOut();
-    flushSync(() => {
-      setUser(null);
-      setLoading(false);
-    });
+    setUser(null);
+    setLoading(false);
     return { error };
   };
 
@@ -141,11 +128,9 @@ export const useAuth = () => {
       isGuest: true
     };
     
-    // Natychmiastowa aktualizacja stanu
-    flushSync(() => {
-      setUser(guestUser);
-      setLoading(false);
-    });
+    // Natural state update without flushSync
+    setUser(guestUser);
+    setLoading(false);
     
     // Wywołaj zdarzenie storage dla innych komponentów
     window.dispatchEvent(new StorageEvent('storage', {
@@ -157,11 +142,9 @@ export const useAuth = () => {
   const exitGuestMode = useCallback(() => {
     localStorage.removeItem('renotimeline_guest_mode');
     
-    // Natychmiastowa aktualizacja stanu
-    flushSync(() => {
-      setUser(null);
-      setLoading(false);
-    });
+    // Natural state update
+    setUser(null);
+    setLoading(false);
     
     // Wywołaj zdarzenie storage dla innych komponentów
     window.dispatchEvent(new StorageEvent('storage', {

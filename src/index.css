@@ -54,6 +54,10 @@
     background: #25292e;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   .glass-effect {
     backdrop-filter: blur(10px);
     background: rgba(31, 41, 55, 0.8);
@@ -61,13 +65,28 @@
   }
 
   .hover-glow {
-    transition: all 0.3s ease;
+    transition: all 0.4s ease-in-out;
   }
 
   .hover-glow:hover {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
+
+  .page-transition {
+    animation: page-enter 0.7s ease-out;
+  }
+
+  .stagger-animation > * {
+    animation: fade-in 0.6s ease-out;
+    animation-fill-mode: both;
+  }
+
+  .stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
 }
 
 @layer components {
@@ -76,14 +95,26 @@
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20;
+    @apply transition-all duration-500 ease-in-out hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20;
   }
 
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105;
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-400 ease-in-out shadow-lg hover:shadow-xl hover:scale-105;
   }
 
   .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-3 rounded-lg transition-all duration-300 border border-gray-600 hover:border-gray-500;
+    @apply bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-3 rounded-lg transition-all duration-400 ease-in-out border border-gray-600 hover:border-gray-500;
+  }
+
+  .tab-transition {
+    @apply transition-all duration-500 ease-in-out;
+  }
+
+  .smooth-entrance {
+    animation: scale-smooth 0.5s ease-out;
+  }
+
+  .natural-fade {
+    animation: fade-in-slow 0.8s ease-out;
   }
 }

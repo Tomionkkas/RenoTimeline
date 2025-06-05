@@ -96,6 +96,26 @@ export default {
 						transform: 'translateY(0)'
 					}
 				},
+				'fade-in-slow': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'fade-out': {
+					'0%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					},
+					'100%': {
+						opacity: '0',
+						transform: 'translateY(-10px)'
+					}
+				},
 				'slide-in': {
 					'0%': {
 						opacity: '0',
@@ -105,17 +125,57 @@ export default {
 						opacity: '1',
 						transform: 'translateX(0)'
 					}
+				},
+				'slide-in-smooth': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateX(-30px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
+				},
+				'scale-smooth': {
+					'0%': {
+						opacity: '0',
+						transform: 'scale(0.95)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'scale(1)'
+					}
+				},
+				'page-enter': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(15px) scale(0.98)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0) scale(1)'
+					}
 				}
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out',
-				'slide-in': 'slide-in 0.3s ease-out'
+				'accordion-down': 'accordion-down 0.4s ease-in-out',
+				'accordion-up': 'accordion-up 0.4s ease-in-out',
+				'fade-in': 'fade-in 0.6s ease-in-out',
+				'fade-in-slow': 'fade-in-slow 0.8s ease-in-out',
+				'fade-out': 'fade-out 0.5s ease-in-out',
+				'slide-in': 'slide-in 0.5s ease-in-out',
+				'slide-in-smooth': 'slide-in-smooth 0.7s ease-out',
+				'scale-smooth': 'scale-smooth 0.5s ease-out',
+				'page-enter': 'page-enter 0.7s ease-out'
 			},
 			backgroundImage: {
 				'gradient-primary': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
 				'gradient-accent': 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+			},
+			transitionDuration: {
+				'400': '400ms',
+				'600': '600ms',
+				'800': '800ms'
 			}
 		}
 	},

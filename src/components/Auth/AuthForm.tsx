@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { UserX } from 'lucide-react';
+import TransitionWrapper from './TransitionWrapper';
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -19,16 +20,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSuccessful, setIsSuccessful] = useState(false);
   
   const { signIn, signUp, signInAsGuest, user } = useAuth();
   const { toast } = useToast();
 
-  // Monitoruj zmiany stanu użytkownika
+  // Monitor user state changes with delay for smooth transition
   useEffect(() => {
-    if (user) {
-      onSuccess?.();
+    if (user && !isSuccessful) {
+      setIsSuccessful(true);
+      // Natural delay before calling success callback
+      setTimeout(() => {
+        onSuccess?.();
+      }, 400);
     }
-  }, [user, onSuccess]);
+  }, [user, onSuccess, isSuccessful]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,11 +79,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     setLoading(true);
     
     try {
-      // Wywołaj signInAsGuest i poczekaj na zakończenie
+      // Natural delay for guest sign in
       await new Promise<void>((resolve) => {
-        signInAsGuest();
-        // Małe opóźnienie dla pewności, że stan się zaktualizował
-        setTimeout(resolve, 50);
+        setTimeout(() => {
+          signInAsGuest();
+          resolve();
+        }, 300);
       });
       
       toast({
@@ -89,11 +96,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // Jeśli użytkownik jest zalogowany, nie pokazuj formularza
-  if (user) {
+  // Show success transition
+  if (user && isSuccessful) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
+        <div className="text-center smooth-entrance">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg">Przekierowywanie...</p>
         </div>
@@ -103,125 +110,131 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Main Auth Card */}
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl gradient-text">
-              {isLogin ? 'Logowanie' : 'Rejestracja'}
-            </CardTitle>
-            <CardDescription>
-              {isLogin 
-                ? 'Zaloguj się do swojego konta RenoTimeline'
-                : 'Utwórz nowe konto RenoTimeline'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">Imię</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required={!isLogin}
-                      placeholder="Twoje imię"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Nazwisko</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required={!isLogin}
-                      placeholder="Twoje nazwisko"
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="twoj@email.com"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Hasło</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Twoje hasło"
-                  minLength={6}
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full btn-primary"
-                disabled={loading}
-              >
-                {loading ? 'Przetwarzanie...' : (isLogin ? 'Zaloguj się' : 'Zarejestruj się')}
-              </Button>
-            </form>
-            
-            <div className="mt-4 text-center">
-              <Button
-                variant="link"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm"
-                disabled={loading}
-              >
+      <TransitionWrapper show={!isSuccessful} className="w-full max-w-md">
+        <div className="space-y-6 stagger-animation">
+          {/* Main Auth Card */}
+          <Card className="smooth-entrance">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl gradient-text">
+                {isLogin ? 'Logowanie' : 'Rejestracja'}
+              </CardTitle>
+              <CardDescription>
                 {isLogin 
-                  ? 'Nie masz konta? Zarejestruj się'
-                  : 'Masz już konto? Zaloguj się'
+                  ? 'Zaloguj się do swojego konta RenoTimeline'
+                  : 'Utwórz nowe konto RenoTimeline'
                 }
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Imię</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required={!isLogin}
+                        placeholder="Twoje imię"
+                        className="transition-all duration-300 focus:scale-105"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Nazwisko</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required={!isLogin}
+                        placeholder="Twoje nazwisko"
+                        className="transition-all duration-300 focus:scale-105"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="twoj@email.com"
+                    className="transition-all duration-300 focus:scale-105"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Hasło</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Twoje hasło"
+                    minLength={6}
+                    className="transition-all duration-300 focus:scale-105"
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full btn-primary"
+                  disabled={loading}
+                >
+                  {loading ? 'Przetwarzanie...' : (isLogin ? 'Zaloguj się' : 'Zarejestruj się')}
+                </Button>
+              </form>
+              
+              <div className="mt-4 text-center">
+                <Button
+                  variant="link"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm transition-all duration-300 hover:scale-105"
+                  disabled={loading}
+                >
+                  {isLogin 
+                    ? 'Nie masz konta? Zarejestruj się'
+                    : 'Masz już konto? Zaloguj się'
+                  }
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Skip Login Card */}
-        <Card className="border-yellow-500/20 bg-yellow-500/5">
-          <CardHeader className="text-center pb-3">
-            <CardTitle className="text-lg flex items-center justify-center space-x-2">
-              <UserX className="w-5 h-5 text-yellow-500" />
-              <span>Pomiń logowanie</span>
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Testuj aplikację bez tworzenia konta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={handleSkipLogin}
-              disabled={loading}
-            >
-              {loading ? 'Ładowanie...' : 'Kontynuuj jako gość'}
-            </Button>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Dane nie będą zachowane po odświeżeniu strony
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Skip Login Card */}
+          <Card className="border-yellow-500/20 bg-yellow-500/5 smooth-entrance">
+            <CardHeader className="text-center pb-3">
+              <CardTitle className="text-lg flex items-center justify-center space-x-2">
+                <UserX className="w-5 h-5 text-yellow-500" />
+                <span>Pomiń logowanie</span>
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Testuj aplikację bez tworzenia konta
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Button 
+                variant="outline" 
+                className="w-full transition-all duration-400 hover:scale-105"
+                onClick={handleSkipLogin}
+                disabled={loading}
+              >
+                {loading ? 'Ładowanie...' : 'Kontynuuj jako gość'}
+              </Button>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Dane nie będą zachowane po odświeżeniu strony
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </TransitionWrapper>
     </div>
   );
 };
