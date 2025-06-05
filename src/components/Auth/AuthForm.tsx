@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,15 +20,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, signInAsGuest, user } = useAuth();
+  const { signIn, signUp, signInAsGuest } = useAuth();
   const { toast } = useToast();
-
-  // Auto-redirect when user is authenticated
-  useEffect(() => {
-    if (user) {
-      onSuccess?.();
-    }
-  }, [user, onSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +63,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   };
 
   const handleSkipLogin = () => {
+    setLoading(true);
     signInAsGuest();
     toast({
       title: 'Tryb gościa',
@@ -161,6 +155,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                 variant="link"
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-sm"
+                disabled={loading}
               >
                 {isLogin 
                   ? 'Nie masz konta? Zarejestruj się'

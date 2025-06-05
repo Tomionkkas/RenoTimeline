@@ -96,11 +96,13 @@ export const useAuth = () => {
       isGuest: true
     };
     setUser(guestUser);
+    setLoading(false);
   };
 
   const exitGuestMode = () => {
     localStorage.removeItem('renotimeline_guest_mode');
     setUser(null);
+    setLoading(false);
   };
 
   return {
