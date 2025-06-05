@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import TransitionWrapper from './TransitionWrapper';
+import ForgotPasswordDialog from './ForgotPasswordDialog';
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -19,6 +20,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   const { signIn, signUp, signInAsGuest, user } = useAuth();
   const { toast } = useToast();
@@ -154,6 +156,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                 />
               </div>
               
+              {isLogin && (
+                <div className="text-right">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-gray-400 hover:text-white p-0 h-auto"
+                    onClick={() => setShowForgotPassword(true)}
+                    disabled={loading}
+                  >
+                    Zapomniałem hasła
+                  </Button>
+                </div>
+              )}
+              
               <Button 
                 type="submit" 
                 className="w-full btn-primary"
@@ -195,6 +211,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           </CardContent>
         </Card>
       </TransitionWrapper>
+
+      <ForgotPasswordDialog 
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+      />
     </div>
   );
 };

@@ -1,46 +1,49 @@
 
 import React from 'react';
 import { TrendingUp, CheckCircle, Clock, Users } from 'lucide-react';
-
-const stats = [
-  {
-    title: 'Ukończone zadania',
-    value: '24',
-    change: '+12%',
-    icon: CheckCircle,
-    color: 'text-green-400',
-    bgColor: 'bg-green-400/10',
-  },
-  {
-    title: 'Zadania w toku',
-    value: '8',
-    change: '+3',
-    icon: Clock,
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-400/10',
-  },
-  {
-    title: 'Członkowie zespołu',
-    value: '12',
-    change: '+2',
-    icon: Users,
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-400/10',
-  },
-  {
-    title: 'Produktywność',
-    value: '89%',
-    change: '+5%',
-    icon: TrendingUp,
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-400/10',
-  },
-];
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 const DashboardStats = () => {
+  const { stats, loading } = useDashboardStats();
+
+  const statsConfig = [
+    {
+      title: 'Ukończone zadania',
+      value: loading ? '...' : stats.completedTasks.toString(),
+      change: '+12%',
+      icon: CheckCircle,
+      color: 'text-green-400',
+      bgColor: 'bg-green-400/10',
+    },
+    {
+      title: 'Zadania w toku',
+      value: loading ? '...' : stats.activeTasks.toString(),
+      change: '+3',
+      icon: Clock,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-400/10',
+    },
+    {
+      title: 'Aktywne projekty',
+      value: loading ? '...' : stats.totalProjects.toString(),
+      change: '+2',
+      icon: Users,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-400/10',
+    },
+    {
+      title: 'Produktywność',
+      value: loading ? '...' : `${stats.productivity}%`,
+      change: '+5%',
+      icon: TrendingUp,
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-400/10',
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => {
+      {statsConfig.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <div

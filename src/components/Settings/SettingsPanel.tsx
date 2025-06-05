@@ -1,17 +1,32 @@
 
 import React, { useState } from 'react';
-import { Bell, User, Palette, Globe, Shield } from 'lucide-react';
+import { Bell, User, Palette, Globe, Shield, TestTube } from 'lucide-react';
+import { useDummyMode } from '@/hooks/useDummyMode';
+import { useToast } from '@/hooks/use-toast';
 
 const settingsSections = [
   { id: 'profile', label: 'Profil', icon: User },
   { id: 'notifications', label: 'Powiadomienia', icon: Bell },
   { id: 'appearance', label: 'Wygląd', icon: Palette },
   { id: 'language', label: 'Język', icon: Globe },
+  { id: 'developer', label: 'Deweloper', icon: TestTube },
   { id: 'security', label: 'Bezpieczeństwo', icon: Shield },
 ];
 
 const SettingsPanel = () => {
   const [activeSection, setActiveSection] = useState('profile');
+  const { isDummyMode, toggleDummyMode } = useDummyMode();
+  const { toast } = useToast();
+
+  const handleDummyModeToggle = () => {
+    toggleDummyMode();
+    toast({
+      title: isDummyMode ? 'Tryb produkcyjny aktywowany' : 'Tryb demo aktywowany',
+      description: isDummyMode 
+        ? 'Aplikacja używa teraz prawdziwych danych' 
+        : 'Aplikacja używa teraz przykładowych danych',
+    });
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -77,6 +92,40 @@ const SettingsPanel = () => {
                   </label>
                 </div>
               ))}
+            </div>
+          </div>
+        );
+      case 'developer':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-white">Ustawienia deweloperskie</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+                <div>
+                  <p className="text-white font-medium">Tryb demo</p>
+                  <p className="text-gray-400 text-sm">
+                    {isDummyMode 
+                      ? 'Aplikacja używa przykładowych danych' 
+                      : 'Aplikacja używa prawdziwych danych z bazy'
+                    }
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={isDummyMode}
+                    onChange={handleDummyModeToggle}
+                  />
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  💡 Tryb demo pozwala na testowanie aplikacji z przykładowymi danymi. 
+                  Przełącz na tryb produkcyjny aby używać prawdziwych danych z bazy.
+                </p>
+              </div>
             </div>
           </div>
         );
