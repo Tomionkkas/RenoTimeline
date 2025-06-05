@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthForm from './AuthForm';
 
@@ -9,6 +9,13 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setShowAuth(!user);
+    }
+  }, [user, loading]);
 
   if (loading) {
     return (
@@ -21,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
-    return <AuthForm />;
+  if (showAuth) {
+    return <AuthForm onSuccess={() => setShowAuth(false)} />;
   }
 
   return <>{children}</>;

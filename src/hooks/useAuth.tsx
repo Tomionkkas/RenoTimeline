@@ -1,5 +1,6 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -17,8 +18,8 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | GuestUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for guest mode first
+  // Funkcja do sprawdzania trybu gościa
+  const checkGuestMode = useCallback(() => {
     const isGuestMode = localStorage.getItem('renotimeline_guest_mode') === 'true';
     if (isGuestMode) {
       const guestUser: GuestUser = {
@@ -30,16 +31,29 @@ export const useAuth = () => {
         email: 'guest@renotimeline.pl',
         isGuest: true
       };
-      setUser(guestUser);
-      setLoading(false);
+      return guestUser;
+    }
+    return null;
+  }, []);
+
+  useEffect(() => {
+    // Najpierw sprawdź tryb gościa
+    const guestUser = checkGuestMode();
+    if (guestUser) {
+      flushSync(() => {
+        setUser(guestUser);
+        setLoading(false);
+      });
       return;
     }
 
     // Get initial session
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+      flushSync(() => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
     };
 
     getSession();
@@ -47,13 +61,40 @@ export const useAuth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
+        // Sprawdź czy nie jesteśmy w trybie gościa
+        const guestUser = checkGuestMode();
+        if (guestUser) {
+          flushSync(() => {
+            setUser(guestUser);
+            setLoading(false);
+          });
+        } else {
+          flushSync(() => {
+            setUser(session?.user ?? null);
+            setLoading(false);
+          });
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Listener dla zmian localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'renotimeline_guest_mode') {
+        const guestUser = checkGuestMode();
+        flushSync(() => {
+          setUser(guestUser);
+          setLoading(false);
+        });
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [checkGuestMode]);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -81,10 +122,14 @@ export const useAuth = () => {
     // Clear guest mode
     localStorage.removeItem('renotimeline_guest_mode');
     const { error } = await supabase.auth.signOut();
+    flushSync(() => {
+      setUser(null);
+      setLoading(false);
+    });
     return { error };
   };
 
-  const signInAsGuest = () => {
+  const signInAsGuest = useCallback(() => {
     localStorage.setItem('renotimeline_guest_mode', 'true');
     const guestUser: GuestUser = {
       id: 'guest-user',
@@ -95,15 +140,35 @@ export const useAuth = () => {
       email: 'guest@renotimeline.pl',
       isGuest: true
     };
-    setUser(guestUser);
-    setLoading(false);
-  };
+    
+    // Natychmiastowa aktualizacja stanu
+    flushSync(() => {
+      setUser(guestUser);
+      setLoading(false);
+    });
+    
+    // Wywołaj zdarzenie storage dla innych komponentów
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'renotimeline_guest_mode',
+      newValue: 'true'
+    }));
+  }, []);
 
-  const exitGuestMode = () => {
+  const exitGuestMode = useCallback(() => {
     localStorage.removeItem('renotimeline_guest_mode');
-    setUser(null);
-    setLoading(false);
-  };
+    
+    // Natychmiastowa aktualizacja stanu
+    flushSync(() => {
+      setUser(null);
+      setLoading(false);
+    });
+    
+    // Wywołaj zdarzenie storage dla innych komponentów
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'renotimeline_guest_mode',
+      newValue: null
+    }));
+  }, []);
 
   return {
     user,

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,8 +20,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, signInAsGuest } = useAuth();
+  const { signIn, signUp, signInAsGuest, user } = useAuth();
   const { toast } = useToast();
+
+  // Monitoruj zmiany stanu użytkownika
+  useEffect(() => {
+    if (user) {
+      onSuccess?.();
+    }
+  }, [user, onSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,14 +69,37 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const handleSkipLogin = () => {
+  const handleSkipLogin = async () => {
     setLoading(true);
-    signInAsGuest();
-    toast({
-      title: 'Tryb gościa',
-      description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
-    });
+    
+    try {
+      // Wywołaj signInAsGuest i poczekaj na zakończenie
+      await new Promise<void>((resolve) => {
+        signInAsGuest();
+        // Małe opóźnienie dla pewności, że stan się zaktualizował
+        setTimeout(resolve, 50);
+      });
+      
+      toast({
+        title: 'Tryb gościa',
+        description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Jeśli użytkownik jest zalogowany, nie pokazuj formularza
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg">Przekierowywanie...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -184,7 +214,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               onClick={handleSkipLogin}
               disabled={loading}
             >
-              Kontynuuj jako gość
+              {loading ? 'Ładowanie...' : 'Kontynuuj jako gość'}
             </Button>
             <p className="text-xs text-gray-500 text-center mt-2">
               Dane nie będą zachowane po odświeżeniu strony
