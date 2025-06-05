@@ -11,10 +11,24 @@ import KanbanBoard from '@/components/Kanban/KanbanBoard';
 import TeamOverview from '@/components/Team/TeamOverview';
 import CalendarWidget from '@/components/Dashboard/CalendarWidget';
 import SettingsPanel from '@/components/Settings/SettingsPanel';
+import ProjectReportsPage from '@/components/Reports/ProjectReportsPage';
+import TimelineView from '@/components/Timeline/TimelineView';
+import NotificationCenter from '@/components/Notifications/NotificationCenter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LayoutDashboard, FolderOpen, Kanban, Calendar, Users, Settings, LogOut } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  FolderOpen, 
+  Kanban, 
+  Calendar, 
+  Users, 
+  Settings, 
+  LogOut, 
+  BarChart3, 
+  Timeline, 
+  Bell 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -94,7 +108,7 @@ const Index = () => {
             </div>
 
             <Tabs defaultValue="dashboard" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-9">
                 <TabsTrigger value="dashboard" className="flex items-center space-x-2">
                   <LayoutDashboard className="w-4 h-4" />
                   <span className="hidden sm:inline">Dashboard</span>
@@ -107,9 +121,21 @@ const Index = () => {
                   <Kanban className="w-4 h-4" />
                   <span className="hidden sm:inline">Kanban</span>
                 </TabsTrigger>
+                <TabsTrigger value="timeline" className="flex items-center space-x-2">
+                  <Timeline className="w-4 h-4" />
+                  <span className="hidden sm:inline">Timeline</span>
+                </TabsTrigger>
                 <TabsTrigger value="calendar" className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4" />
                   <span className="hidden sm:inline">Kalendarz</span>
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center space-x-2">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Raporty</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center space-x-2">
+                  <Bell className="w-4 h-4" />
+                  <span className="hidden sm:inline">Powiadomienia</span>
                 </TabsTrigger>
                 <TabsTrigger value="team" className="flex items-center space-x-2">
                   <Users className="w-4 h-4" />
@@ -135,9 +161,11 @@ const Index = () => {
                         <ul className="mt-2 space-y-1 text-gray-400 text-sm">
                           <li>• Zarządzać projektami w zakładce "Projekty"</li>
                           <li>• Organizować zadania w tablicy "Kanban"</li>
+                          <li>• Śledzić timeline w "Timeline"</li>
+                          <li>• Analizować postęp w "Raporty"</li>
+                          <li>• Otrzymywać powiadomienia o ważnych terminach</li>
                           <li>• Planować terminy w "Kalendarz"</li>
                           <li>• Współpracować z zespołem</li>
-                          <li>• Dostosować ustawienia aplikacji</li>
                         </ul>
                       </div>
                       {isGuestMode && (
@@ -163,8 +191,20 @@ const Index = () => {
                 <KanbanBoard />
               </TabsContent>
 
+              <TabsContent value="timeline">
+                <TimelineView />
+              </TabsContent>
+
               <TabsContent value="calendar">
                 <CalendarWidget />
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <ProjectReportsPage />
+              </TabsContent>
+
+              <TabsContent value="notifications">
+                <NotificationCenter />
               </TabsContent>
 
               <TabsContent value="team">

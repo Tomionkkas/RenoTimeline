@@ -69,6 +69,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       title: 'Tryb gościa',
       description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
     });
+    // Automatyczne przekierowanie do głównej aplikacji
     onSuccess?.();
   };
 
