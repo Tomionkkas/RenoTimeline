@@ -60,11 +60,10 @@ export const useAuth = () => {
         const guestUser = checkGuestMode();
         if (guestUser) {
           setUser(guestUser);
-          setLoading(false);
         } else {
           setUser(session?.user ?? null);
-          setLoading(false);
         }
+        setLoading(false);
       }
     );
 
@@ -112,7 +111,6 @@ export const useAuth = () => {
     localStorage.removeItem('renotimeline_guest_mode');
     const { error } = await supabase.auth.signOut();
     setUser(null);
-    setLoading(false);
     return { error };
   };
 
@@ -128,9 +126,8 @@ export const useAuth = () => {
       isGuest: true
     };
     
-    // Natural state update without flushSync
+    // Immediate state update
     setUser(guestUser);
-    setLoading(false);
     
     // Wywołaj zdarzenie storage dla innych komponentów
     window.dispatchEvent(new StorageEvent('storage', {
@@ -142,9 +139,8 @@ export const useAuth = () => {
   const exitGuestMode = useCallback(() => {
     localStorage.removeItem('renotimeline_guest_mode');
     
-    // Natural state update
+    // Immediate state update
     setUser(null);
-    setLoading(false);
     
     // Wywołaj zdarzenie storage dla innych komponentów
     window.dispatchEvent(new StorageEvent('storage', {

@@ -6,13 +6,15 @@ interface TransitionWrapperProps {
   show: boolean;
   delay?: number;
   className?: string;
+  exitDuration?: number;
 }
 
 const TransitionWrapper: React.FC<TransitionWrapperProps> = ({ 
   children, 
   show, 
   delay = 0,
-  className = ''
+  className = '',
+  exitDuration = 300
 }) => {
   const [shouldRender, setShouldRender] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -31,10 +33,10 @@ const TransitionWrapper: React.FC<TransitionWrapperProps> = ({
       setIsVisible(false);
       const timer = setTimeout(() => {
         setShouldRender(false);
-      }, 500); // Wait for exit animation
+      }, exitDuration);
       return () => clearTimeout(timer);
     }
-  }, [show, delay]);
+  }, [show, delay, exitDuration]);
 
   if (!shouldRender) return null;
 

@@ -20,21 +20,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSuccessful, setIsSuccessful] = useState(false);
   
   const { signIn, signUp, signInAsGuest, user } = useAuth();
   const { toast } = useToast();
 
-  // Monitor user state changes with delay for smooth transition
+  // Monitor user state changes
   useEffect(() => {
-    if (user && !isSuccessful) {
-      setIsSuccessful(true);
+    if (user) {
       // Natural delay before calling success callback
       setTimeout(() => {
         onSuccess?.();
-      }, 400);
+      }, 200);
     }
-  }, [user, onSuccess, isSuccessful]);
+  }, [user, onSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,42 +73,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const handleSkipLogin = async () => {
+  const handleSkipLogin = () => {
     setLoading(true);
+    signInAsGuest();
     
-    try {
-      // Natural delay for guest sign in
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          signInAsGuest();
-          resolve();
-        }, 300);
-      });
-      
-      toast({
-        title: 'Tryb gościa',
-        description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: 'Tryb gościa',
+      description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
+    });
   };
-
-  // Show success transition
-  if (user && isSuccessful) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center smooth-entrance">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg">Przekierowywanie...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <TransitionWrapper show={!isSuccessful} className="w-full max-w-md">
+      <TransitionWrapper show={!user} className="w-full max-w-md" exitDuration={200}>
         <div className="space-y-6 stagger-animation">
           {/* Main Auth Card */}
           <Card className="smooth-entrance">

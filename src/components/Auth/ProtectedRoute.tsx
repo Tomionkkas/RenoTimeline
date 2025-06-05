@@ -11,25 +11,19 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      if (!user && !showAuth) {
-        // Add small delay before showing auth
+      if (!user) {
+        // Quick delay before showing auth
         setTimeout(() => {
           setShowAuth(true);
-        }, 200);
-      } else if (user && showAuth) {
-        // Smooth transition from auth to app
-        setIsTransitioning(true);
-        setTimeout(() => {
-          setShowAuth(false);
-          setIsTransitioning(false);
-        }, 300);
+        }, 100);
+      } else {
+        setShowAuth(false);
       }
     }
-  }, [user, loading, showAuth]);
+  }, [user, loading]);
 
   if (loading) {
     return (
@@ -42,22 +36,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (showAuth || isTransitioning) {
+  if (showAuth) {
     return (
-      <TransitionWrapper show={showAuth && !isTransitioning}>
-        <AuthForm onSuccess={() => {
-          setIsTransitioning(true);
-          setTimeout(() => {
-            setShowAuth(false);
-            setIsTransitioning(false);
-          }, 300);
-        }} />
+      <TransitionWrapper show={true} exitDuration={200}>
+        <AuthForm onSuccess={() => setShowAuth(false)} />
       </TransitionWrapper>
     );
   }
 
   return (
-    <TransitionWrapper show={!!user} delay={100} className="page-transition">
+    <TransitionWrapper show={!!user} delay={50} className="page-transition" exitDuration={200}>
       {children}
     </TransitionWrapper>
   );
