@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { useDemoMode } from './useDemoMode';
 
 export interface Project {
   id: string;
@@ -17,16 +16,45 @@ export interface Project {
   updated_at: string;
 }
 
+// Guest mode sample data
+const guestProjects: Project[] = [
+  {
+    id: 'guest-project-1',
+    name: 'Remont łazienki',
+    description: 'Kompleksowy remont głównej łazienki - wymiana płytek, instalacji i armatury',
+    status: 'active',
+    start_date: '2024-01-15',
+    end_date: '2024-03-30',
+    budget: 25000,
+    owner_id: 'guest-user',
+    created_at: '2024-01-10T10:00:00Z',
+    updated_at: '2024-01-10T10:00:00Z'
+  },
+  {
+    id: 'guest-project-2',
+    name: 'Modernizacja kuchni',
+    description: 'Wymiana mebli kuchennych, AGD i oświetlenia',
+    status: 'active',
+    start_date: '2024-02-01',
+    end_date: '2024-04-15',
+    budget: 35000,
+    owner_id: 'guest-user',
+    created_at: '2024-01-25T14:30:00Z',
+    updated_at: '2024-01-25T14:30:00Z'
+  }
+];
+
 export const useProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { isDemoMode, demoProjects } = useDemoMode();
+
+  const isGuestMode = user && 'isGuest' in user;
 
   useEffect(() => {
-    if (isDemoMode) {
-      setProjects(demoProjects as Project[]);
+    if (isGuestMode) {
+      setProjects(guestProjects);
       setLoading(false);
       return;
     }
@@ -38,7 +66,7 @@ export const useProjects = () => {
     }
 
     fetchProjects();
-  }, [user, isDemoMode, demoProjects]);
+  }, [user, isGuestMode]);
 
   const fetchProjects = async () => {
     try {
@@ -69,7 +97,25 @@ export const useProjects = () => {
     end_date?: string;
     budget?: number;
   }) => {
-    if (isDemoMode || !user) return null;
+    if (isGuestMode) {
+      // In guest mode, just simulate project creation
+      const newProject: Project = {
+        id: `guest-project-${Date.now()}`,
+        name: projectData.name,
+        description: projectData.description || null,
+        status: 'active',
+        start_date: projectData.start_date || null,
+        end_date: projectData.end_date || null,
+        budget: projectData.budget || null,
+        owner_id: 'guest-user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setProjects(prev => [newProject, ...prev]);
+      return newProject;
+    }
+
+    if (!user) return null;
 
     try {
       const { data, error } = await supabase

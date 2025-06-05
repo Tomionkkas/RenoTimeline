@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { useDemoMode } from './useDemoMode';
 
 export interface Task {
   id: string;
@@ -20,19 +19,99 @@ export interface Task {
   updated_at: string;
 }
 
+// Guest mode sample data
+const guestTasks: Task[] = [
+  {
+    id: 'guest-task-1',
+    title: 'Zdemontować starą armaturę',
+    description: 'Usunięcie starej baterii, sedesu i umywalki',
+    status: 'done',
+    priority: 'high',
+    project_id: 'guest-project-1',
+    assigned_to: null,
+    created_by: 'guest-user',
+    due_date: '2024-01-20',
+    estimated_hours: 8,
+    actual_hours: null,
+    created_at: '2024-01-15T10:00:00Z',
+    updated_at: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: 'guest-task-2',
+    title: 'Położyć nowe płytki',
+    description: 'Układanie płytek ceramicznych na ścianach i podłodze',
+    status: 'in_progress',
+    priority: 'high',
+    project_id: 'guest-project-1',
+    assigned_to: null,
+    created_by: 'guest-user',
+    due_date: '2024-02-15',
+    estimated_hours: 24,
+    actual_hours: null,
+    created_at: '2024-01-16T10:00:00Z',
+    updated_at: '2024-01-16T10:00:00Z'
+  },
+  {
+    id: 'guest-task-3',
+    title: 'Zamontować nową armaturę',
+    description: 'Instalacja nowej baterii, sedesu i umywalki',
+    status: 'todo',
+    priority: 'medium',
+    project_id: 'guest-project-1',
+    assigned_to: null,
+    created_by: 'guest-user',
+    due_date: '2024-03-10',
+    estimated_hours: 12,
+    actual_hours: null,
+    created_at: '2024-01-17T10:00:00Z',
+    updated_at: '2024-01-17T10:00:00Z'
+  },
+  {
+    id: 'guest-task-4',
+    title: 'Zaprojektować układ mebli',
+    description: 'Stworzenie projektu rozmieszczenia mebli kuchennych',
+    status: 'done',
+    priority: 'high',
+    project_id: 'guest-project-2',
+    assigned_to: null,
+    created_by: 'guest-user',
+    due_date: '2024-02-05',
+    estimated_hours: 6,
+    actual_hours: null,
+    created_at: '2024-01-25T10:00:00Z',
+    updated_at: '2024-01-25T10:00:00Z'
+  },
+  {
+    id: 'guest-task-5',
+    title: 'Zamówić meble kuchenne',
+    description: 'Złożenie zamówienia na meble zgodnie z projektem',
+    status: 'in_progress',
+    priority: 'medium',
+    project_id: 'guest-project-2',
+    assigned_to: null,
+    created_by: 'guest-user',
+    due_date: '2024-02-28',
+    estimated_hours: 4,
+    actual_hours: null,
+    created_at: '2024-01-26T10:00:00Z',
+    updated_at: '2024-01-26T10:00:00Z'
+  }
+];
+
 export const useTasks = (projectId?: string) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { isDemoMode, demoTasks } = useDemoMode();
+
+  const isGuestMode = user && 'isGuest' in user;
 
   useEffect(() => {
-    if (isDemoMode) {
+    if (isGuestMode) {
       const filteredTasks = projectId 
-        ? demoTasks.filter(task => task.project_id === projectId)
-        : demoTasks;
-      setTasks(filteredTasks as Task[]);
+        ? guestTasks.filter(task => task.project_id === projectId)
+        : guestTasks;
+      setTasks(filteredTasks);
       setLoading(false);
       return;
     }
@@ -44,7 +123,7 @@ export const useTasks = (projectId?: string) => {
     }
 
     fetchTasks();
-  }, [user, isDemoMode, demoTasks, projectId]);
+  }, [user, isGuestMode, projectId]);
 
   const fetchTasks = async () => {
     try {
@@ -84,7 +163,28 @@ export const useTasks = (projectId?: string) => {
     due_date?: string;
     estimated_hours?: number;
   }) => {
-    if (isDemoMode || !user) return null;
+    if (isGuestMode) {
+      // In guest mode, simulate task creation
+      const newTask: Task = {
+        id: `guest-task-${Date.now()}`,
+        title: taskData.title,
+        description: taskData.description || null,
+        status: taskData.status || 'todo',
+        priority: taskData.priority || 'medium',
+        project_id: taskData.project_id,
+        assigned_to: taskData.assigned_to || null,
+        created_by: 'guest-user',
+        due_date: taskData.due_date || null,
+        estimated_hours: taskData.estimated_hours || null,
+        actual_hours: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setTasks(prev => [newTask, ...prev]);
+      return newTask;
+    }
+
+    if (!user) return null;
 
     try {
       const { data, error } = await supabase
@@ -110,7 +210,15 @@ export const useTasks = (projectId?: string) => {
   };
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
-    if (isDemoMode) return null;
+    if (isGuestMode) {
+      // In guest mode, simulate task update
+      setTasks(prev => prev.map(task => 
+        task.id === taskId 
+          ? { ...task, ...updates, updated_at: new Date().toISOString() }
+          : task
+      ));
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -134,7 +242,11 @@ export const useTasks = (projectId?: string) => {
   };
 
   const deleteTask = async (taskId: string) => {
-    if (isDemoMode) return;
+    if (isGuestMode) {
+      // In guest mode, simulate task deletion
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      return;
+    }
 
     try {
       const { error } = await supabase

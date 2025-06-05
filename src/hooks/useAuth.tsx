@@ -3,11 +3,38 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+interface GuestUser {
+  id: string;
+  user_metadata: {
+    first_name: string;
+    last_name: string;
+  };
+  email: string;
+  isGuest: true;
+}
+
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | GuestUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for guest mode first
+    const isGuestMode = localStorage.getItem('renotimeline_guest_mode') === 'true';
+    if (isGuestMode) {
+      const guestUser: GuestUser = {
+        id: 'guest-user',
+        user_metadata: {
+          first_name: 'Gość',
+          last_name: 'Użytkownik'
+        },
+        email: 'guest@renotimeline.pl',
+        isGuest: true
+      };
+      setUser(guestUser);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -51,8 +78,29 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
+    // Clear guest mode
+    localStorage.removeItem('renotimeline_guest_mode');
     const { error } = await supabase.auth.signOut();
     return { error };
+  };
+
+  const signInAsGuest = () => {
+    localStorage.setItem('renotimeline_guest_mode', 'true');
+    const guestUser: GuestUser = {
+      id: 'guest-user',
+      user_metadata: {
+        first_name: 'Gość',
+        last_name: 'Użytkownik'
+      },
+      email: 'guest@renotimeline.pl',
+      isGuest: true
+    };
+    setUser(guestUser);
+  };
+
+  const exitGuestMode = () => {
+    localStorage.removeItem('renotimeline_guest_mode');
+    setUser(null);
   };
 
   return {
@@ -61,5 +109,7 @@ export const useAuth = () => {
     signUp,
     signIn,
     signOut,
+    signInAsGuest,
+    exitGuestMode,
   };
 };

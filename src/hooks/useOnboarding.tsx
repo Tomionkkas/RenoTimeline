@@ -8,9 +8,18 @@ export const useOnboarding = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
+  const isGuestMode = user && 'isGuest' in user;
+
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // Skip onboarding for guest users
+      if (isGuestMode) {
+        setNeedsOnboarding(false);
         setLoading(false);
         return;
       }
@@ -39,7 +48,7 @@ export const useOnboarding = () => {
     };
 
     checkOnboardingStatus();
-  }, [user]);
+  }, [user, isGuestMode]);
 
   const completeOnboarding = () => {
     setNeedsOnboarding(false);
