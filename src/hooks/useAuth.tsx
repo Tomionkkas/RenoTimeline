@@ -92,8 +92,7 @@ export const useAuth = () => {
         data: {
           first_name: firstName,
           last_name: lastName,
-        },
-        emailRedirectTo: undefined, // Wyłączenie przekierowania email
+        }
       },
     });
     return { data, error };
