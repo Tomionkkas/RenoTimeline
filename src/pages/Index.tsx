@@ -1,15 +1,49 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import ProtectedRoute from '@/components/Auth/ProtectedRoute';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow';
 import DashboardStats from '@/components/Dashboard/DashboardStats';
+import DemoModeSelector from '@/components/Demo/DemoModeSelector';
+import DemoDashboard from '@/components/Demo/DemoDashboard';
 
 const Index = () => {
   const { user } = useAuth();
   const { needsOnboarding, loading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const { isDemoMode, enableDemoMode, disableDemoMode } = useDemoMode();
+  const [showAuthFlow, setShowAuthFlow] = useState(false);
 
+  const handleSelectDemo = () => {
+    enableDemoMode();
+  };
+
+  const handleSelectAuth = () => {
+    setShowAuthFlow(true);
+  };
+
+  const handleExitDemo = () => {
+    disableDemoMode();
+    setShowAuthFlow(true);
+  };
+
+  // Show demo mode selector if not authenticated and not in demo mode and not showing auth flow
+  if (!user && !isDemoMode && !showAuthFlow) {
+    return (
+      <DemoModeSelector 
+        onSelectDemo={handleSelectDemo}
+        onSelectAuth={handleSelectAuth}
+      />
+    );
+  }
+
+  // Show demo dashboard if in demo mode
+  if (isDemoMode && !user) {
+    return <DemoDashboard onExitDemo={handleExitDemo} />;
+  }
+
+  // Regular authenticated flow
   return (
     <ProtectedRoute>
       {onboardingLoading ? (
