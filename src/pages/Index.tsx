@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -26,7 +25,7 @@ import {
   Settings, 
   LogOut, 
   BarChart3, 
-  Timeline, 
+  Clock, 
   Bell 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -122,7 +121,7 @@ const Index = () => {
                   <span className="hidden sm:inline">Kanban</span>
                 </TabsTrigger>
                 <TabsTrigger value="timeline" className="flex items-center space-x-2">
-                  <Timeline className="w-4 h-4" />
+                  <Clock className="w-4 h-4" />
                   <span className="hidden sm:inline">Timeline</span>
                 </TabsTrigger>
                 <TabsTrigger value="calendar" className="flex items-center space-x-2">
