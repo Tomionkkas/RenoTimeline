@@ -6,8 +6,13 @@ import { useDemoMode } from '@/hooks/useDemoMode';
 import ProtectedRoute from '@/components/Auth/ProtectedRoute';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow';
 import DashboardStats from '@/components/Dashboard/DashboardStats';
+import RecentTasks from '@/components/Dashboard/RecentTasks';
+import ProjectsList from '@/components/Projects/ProjectsList';
+import KanbanBoard from '@/components/Kanban/KanbanBoard';
 import DemoModeSelector from '@/components/Demo/DemoModeSelector';
 import DemoDashboard from '@/components/Demo/DemoDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LayoutDashboard, FolderOpen, Kanban, Calendar, Users, Settings } from 'lucide-react';
 
 const Index = () => {
   const { user } = useAuth();
@@ -64,24 +69,92 @@ const Index = () => {
               </h1>
               <p className="text-gray-400">
                 Witaj z powrotem, {user?.user_metadata?.first_name || 'Użytkowniku'}! 
-                Oto przegląd Twoich projektów.
+                Zarządzaj swoimi projektami remontowymi.
               </p>
             </div>
-            
-            <DashboardStats />
-            
-            <div className="text-center py-12">
-              <p className="text-gray-400 mb-4">
-                To jest początek Twojego dashboardu. Następnie zaimplementujemy:
-              </p>
-              <ul className="text-left max-w-md mx-auto space-y-2 text-gray-300">
-                <li>• Listę projektów</li>
-                <li>• Tablicę Kanban z zadaniami</li>
-                <li>• Kalendarz</li>
-                <li>• Zarządzanie zespołem</li>
-                <li>• Ustawienia</li>
-              </ul>
-            </div>
+
+            <Tabs defaultValue="dashboard" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="projects" className="flex items-center space-x-2">
+                  <FolderOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Projekty</span>
+                </TabsTrigger>
+                <TabsTrigger value="kanban" className="flex items-center space-x-2">
+                  <Kanban className="w-4 h-4" />
+                  <span className="hidden sm:inline">Kanban</span>
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex items-center space-x-2" disabled>
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Kalendarz</span>
+                </TabsTrigger>
+                <TabsTrigger value="team" className="flex items-center space-x-2" disabled>
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Zespół</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center space-x-2" disabled>
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ustawienia</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dashboard" className="space-y-6">
+                <DashboardStats />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <RecentTasks />
+                  <div className="bg-card rounded-xl border border-gray-800 p-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Szybkie akcje</h2>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-gray-800/50 rounded-lg">
+                        <p className="text-gray-300 text-sm">
+                          🚀 Twoje aplikacja jest gotowa! Możesz teraz:
+                        </p>
+                        <ul className="mt-2 space-y-1 text-gray-400 text-sm">
+                          <li>• Zarządzać projektami w zakładce "Projekty"</li>
+                          <li>• Organizować zadania w tablicy "Kanban"</li>
+                          <li>• Śledzić postępy w czasie rzeczywistym</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="projects">
+                <ProjectsList />
+              </TabsContent>
+
+              <TabsContent value="kanban">
+                <KanbanBoard />
+              </TabsContent>
+
+              <TabsContent value="calendar">
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold mb-2">Kalendarz w budowie</h3>
+                  <p className="text-gray-400">Ta funkcja będzie dostępna wkrótce</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="team">
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold mb-2">Zarządzanie zespołem w budowie</h3>
+                  <p className="text-gray-400">Ta funkcja będzie dostępna wkrótce</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="settings">
+                <div className="text-center py-12">
+                  <Settings className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold mb-2">Ustawienia w budowie</h3>
+                  <p className="text-gray-400">Ta funkcja będzie dostępna wkrótce</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       )}
