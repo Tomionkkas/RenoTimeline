@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,8 +20,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, signInAsGuest } = useAuth();
+  const { signIn, signUp, signInAsGuest, user } = useAuth();
   const { toast } = useToast();
+
+  // Auto-redirect when user is authenticated
+  useEffect(() => {
+    if (user) {
+      onSuccess?.();
+    }
+  }, [user, onSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +48,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             title: 'Zalogowano pomyślnie',
             description: 'Witaj z powrotem!',
           });
-          onSuccess?.();
         }
       } else {
         const { error } = await signUp(email, password, firstName, lastName);
@@ -69,8 +75,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       title: 'Tryb gościa',
       description: 'Możesz testować aplikację bez logowania. Dane nie będą zachowane.',
     });
-    // Automatyczne przekierowanie do głównej aplikacji
-    onSuccess?.();
   };
 
   return (
@@ -183,6 +187,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               variant="outline" 
               className="w-full"
               onClick={handleSkipLogin}
+              disabled={loading}
             >
               Kontynuuj jako gość
             </Button>
