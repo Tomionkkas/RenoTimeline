@@ -134,30 +134,47 @@ ALTER TABLE calcreno_room_elements ENABLE ROW LEVEL SECURITY;
 
 ---
 
-## Faza 1: Basic Project Linking (MVP)
+## Faza 1: Basic Project Linking (MVP) ✅ **UKOŃCZONE - RenoTimeline Side**
 
 ### 🎯 Cel Fazy:
 Podstawowe połączenie projektów między CalcReno a RenoTimeline z minimalnym przesyłaniem danych.
 **WYMAGA: Ukończony Etap Przygotowawczy (CalcReno w Supabase)**
 
+### ✅ **Ukończone - RenoTimeline Side (Gotowe do integracji z CalcReno)**
+
 ### 📋 Zakres Prac:
 
-#### 1.1 **Simple Project Export (CalcReno → RenoTimeline)**
-- **"Utwórz harmonogram w RenoTimeline" button** w CalcReno (dla zalogowanych users)
-- **Basic API endpoint** w RenoTimeline przyjmujący dane projektu z CalcReno
-- **One-way project creation** - projekt powstaje w RenoTimeline na podstawie CalcReno z Supabase
-- **Shared user verification** - tylko owner CalcReno project może eksportować
-- **Reference link** w RenoTimeline powrót do projektu źródłowego w CalcReno
+#### 1.1 **✅ Simple Project Export (CalcReno → RenoTimeline) - UKOŃCZONE**
+- **✅ API endpoint** w RenoTimeline (`/functions/import-calcreno-project`) - READY
+- **✅ Database schema** z polami CalcReno integration (source_app, calcreno_project_id, etc.) - READY  
+- **✅ Project import functionality** - creates RenoTimeline project from CalcReno data - READY
+- **✅ User verification** - only authenticated users can import - READY
+- **✅ Duplicate prevention** - checks if project already imported - READY
+- **✅ UI indicators** - ProjectCard shows CalcReno badge and link - READY
+- **🔄 CalcReno Side**: "Utwórz harmonogram w RenoTimeline" button - **NEEDS IMPLEMENTATION**
 
-#### 1.2 **Cross-App Notification API**
+#### 1.2 **✅ Cross-App Notification API - UKOŃCZONE**
+- **✅ Database table** `cross_app_notifications` with full schema - READY
+- **✅ TypeScript interfaces** for notification data - READY
+- **✅ Hook** `useCrossAppNotifications` for notification management - READY
+- **✅ UI component** `CalcRenoNotificationCard` for displaying notifications - READY
+- **✅ Real-time subscriptions** for live notification updates - READY
+
 ```typescript
 interface CrossAppNotification {
+  id: string;
   project_id: string;
+  calcreno_project_id: string;
   source_app: 'calcreno' | 'renotimeline';
-  event_type: 'budget_updated' | 'project_milestone' | 'cost_alert';
+  type: 'budget_updated' | 'cost_alert' | 'project_milestone' | 'material_price_change' | 'task_completed';
+  title: string;
   message: string;
-  actionable_link?: string;
   priority: 'low' | 'medium' | 'high';
+  data?: any;
+  calcreno_reference_url?: string;
+  created_at: string;
+  read: boolean;
+  user_id: string;
 }
 ```
 
