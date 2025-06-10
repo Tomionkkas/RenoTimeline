@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, DollarSign, MoreHorizontal, Edit, Eye } from 'lucide-react';
+import { Calendar, DollarSign, MoreHorizontal, Edit, Eye, ExternalLink, ArrowUpRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,9 @@ interface ProjectCardProps {
     end_date?: string;
     status?: string;
     created_at?: string;
+    source_app?: string;
+    calcreno_reference_url?: string;
+    imported_at?: string;
   };
   onEdit?: (project: any) => void;
 }
@@ -45,14 +48,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit }) => {
     e.stopPropagation(); // Prevent card click navigation
   };
 
-  const formatBudget = (budget: string | undefined) => {
-    if (!budget) return 'Not specified';
-    return `${parseInt(budget).toLocaleString()} zł`;
+  const formatBudget = (budget: number | null): string => {
+    if (!budget) return 'Nie określono';
+    return `${budget.toLocaleString()} zł`;
   };
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Not set';
-    return dateString;
+  const formatDate = (date: string | null): string => {
+    if (!date) return 'Nie określono';
+    return new Date(date).toLocaleDateString('pl-PL');
   };
 
   const getStatusColor = (status: string | undefined) => {
@@ -71,49 +74,59 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit }) => {
     }
   };
 
+  const isCalcRenoProject = project.source_app === 'calcreno';
+
+  const handleCalcRenoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (project.calcreno_reference_url) {
+      window.open(project.calcreno_reference_url, '_blank');
+    }
+  };
+
   return (
     <Card 
-      className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02] group"
+      className="cursor-pointer hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] group border-gray-200 hover:border-blue-300"
       onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="default" className="text-xs">
-                Aktywny
-              </Badge>
-            </div>
-            <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
+            <CardTitle className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors line-clamp-2">
               {project.name}
             </CardTitle>
-            {project.description && (
-              <CardDescription className="mt-1">
-                {project.description}
-              </CardDescription>
+            <CardDescription className="mt-1 text-sm text-gray-600 line-clamp-2">
+              {project.description || "Brak opisu"}
+            </CardDescription>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant="outline" className="text-xs whitespace-nowrap">
+              {project.status || 'Aktywny'}
+            </Badge>
+            {isCalcRenoProject && (
+              <div className="flex items-center gap-1">
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 transition-colors"
+                >
+                  📊 CalcReno
+                </Badge>
+                {project.calcreno_reference_url && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCalcRenoClick}
+                    className="h-6 w-6 p-0 hover:bg-blue-100"
+                    title="Otwórz w CalcReno"
+                  >
+                    <ExternalLink className="h-3 w-3 text-blue-600" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={handleMenuClick}>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleCardClick}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Project
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleEditClick}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Project
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         <div className="space-y-3">
           {/* Budget */}
@@ -130,6 +143,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit }) => {
             <span className="font-medium">{formatDate(project.end_date)}</span>
           </div>
 
+          {/* CalcReno import info */}
+          {isCalcRenoProject && project.imported_at && (
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <ArrowUpRight className="w-4 h-4" />
+              <span>Zaimportowano: {new Date(project.imported_at).toLocaleDateString('pl-PL')}</span>
+            </div>
+          )}
+
           {/* Creation date */}
           {project.created_at && (
             <div className="text-xs text-gray-500">
@@ -140,7 +161,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit }) => {
           {/* Action hint */}
           <div className="pt-2 border-t">
             <p className="text-xs text-blue-600 group-hover:text-blue-700 font-medium">
-              Click to open project dashboard →
+              {isCalcRenoProject ? 'Projekt z CalcReno → Kliknij aby zarządzać harmonogramem' : 'Click to open project dashboard →'}
             </p>
           </div>
         </div>

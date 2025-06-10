@@ -301,36 +301,48 @@ export type Database = {
       projects: {
         Row: {
           budget: number | null
+          calcreno_project_id: string | null
+          calcreno_reference_url: string | null
           created_at: string
           description: string | null
           end_date: string | null
           id: string
+          imported_at: string | null
           name: string
           owner_id: string
+          source_app: string | null
           start_date: string | null
           status: string | null
           updated_at: string
         }
         Insert: {
           budget?: number | null
+          calcreno_project_id?: string | null
+          calcreno_reference_url?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
+          imported_at?: string | null
           name: string
           owner_id?: string
+          source_app?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string
         }
         Update: {
           budget?: number | null
+          calcreno_project_id?: string | null
+          calcreno_reference_url?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
+          imported_at?: string | null
           name?: string
           owner_id?: string
+          source_app?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string

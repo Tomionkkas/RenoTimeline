@@ -12,6 +12,10 @@ export interface Project {
   end_date: string | null;
   budget: number | null;
   owner_id: string;
+  source_app: string | null;
+  calcreno_project_id: string | null;
+  calcreno_reference_url: string | null;
+  imported_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +31,10 @@ const guestProjects: Project[] = [
     end_date: '2024-03-30',
     budget: 25000,
     owner_id: 'guest-user',
+    source_app: null,
+    calcreno_project_id: null,
+    calcreno_reference_url: null,
+    imported_at: null,
     created_at: '2024-01-10T10:00:00Z',
     updated_at: '2024-01-10T10:00:00Z'
   },
@@ -39,6 +47,10 @@ const guestProjects: Project[] = [
     end_date: '2024-04-15',
     budget: 35000,
     owner_id: 'guest-user',
+    source_app: null,
+    calcreno_project_id: null,
+    calcreno_reference_url: null,
+    imported_at: null,
     created_at: '2024-01-25T14:30:00Z',
     updated_at: '2024-01-25T14:30:00Z'
   }
