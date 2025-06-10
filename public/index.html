@@ -1,0 +1,63 @@
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  
+  <!-- Workflow Debug Functions -->
+  <script>
+    window.workflowDebugSimple = {
+      test: () => {
+        console.log('🧪 Testing workflow system...');
+        
+        // Create test data that matches your workflow trigger
+        const testData = {
+          taskId: 'test-task-' + Date.now(),
+          projectId: '10393f3d-f21f-43ae-a086-c4ea1377b9ff', // Your project ID
+          oldStatus: 'todo',
+          newStatus: 'done', // This matches your workflow trigger
+          userId: '64872b25-a2b9-47cf-9882-967a610cb2bf',
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('🎯 Test data:', testData);
+        console.log('📝 To test: window.workflowDebugSimple.emit(testData)');
+        
+        return testData;
+      },
+      
+      emit: (data) => {
+        console.log('🚀 Emitting workflow event:', data);
+        
+        // This should trigger your workflow if the system is working
+        if (window.workflowEventBus && window.workflowEventBus.emit) {
+          window.workflowEventBus.emit('task_status_changed', data);
+          console.log('✅ Event emitted via workflowEventBus');
+        } else {
+          console.error('❌ WorkflowEventBus not found on window');
+          console.log('💡 Try: window.workflowDebugSimple.manualTest()');
+        }
+      },
+      
+      manualTest: async () => {
+        console.log('🔧 Running manual workflow execution test...');
+        
+        try {
+          // Check if we have access to the workflow system
+          if (typeof window.AutoWorkflowManager !== 'undefined') {
+            console.log('✅ AutoWorkflowManager found');
+            window.AutoWorkflowManager.initialize();
+          }
+          
+          // Try to access the event bus
+          const testData = window.workflowDebugSimple.test();
+          
+          console.log('🎯 Manual execution complete');
+          console.log('💡 Check database for workflow_executions and notifications');
+          
+        } catch (error) {
+          console.error('❌ Manual test failed:', error);
+        }
+      }
+    };
+    
+    console.log('🔧 Workflow debug functions loaded!');
+    console.log('💡 Try: window.workflowDebugSimple.test()');
+  </script> 

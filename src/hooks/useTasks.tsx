@@ -1,7 +1,8 @@
-
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useDummyMode } from './useDummyMode';
+import { toast } from 'sonner';
 
 export interface Task {
   id: string;
@@ -13,6 +14,10 @@ export interface Task {
   assigned_to: string | null;
   created_by: string;
   due_date: string | null;
+  start_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  is_all_day: boolean | null;
   estimated_hours: number | null;
   actual_hours: number | null;
   created_at: string;
@@ -31,6 +36,10 @@ const guestTasks: Task[] = [
     assigned_to: null,
     created_by: 'guest-user',
     due_date: '2024-01-20',
+    start_date: null,
+    start_time: null,
+    end_time: null,
+    is_all_day: true,
     estimated_hours: 8,
     actual_hours: null,
     created_at: '2024-01-15T10:00:00Z',
@@ -46,6 +55,10 @@ const guestTasks: Task[] = [
     assigned_to: null,
     created_by: 'guest-user',
     due_date: '2024-02-15',
+    start_date: null,
+    start_time: null,
+    end_time: null,
+    is_all_day: true,
     estimated_hours: 24,
     actual_hours: null,
     created_at: '2024-01-16T10:00:00Z',
@@ -61,6 +74,10 @@ const guestTasks: Task[] = [
     assigned_to: null,
     created_by: 'guest-user',
     due_date: '2024-03-10',
+    start_date: null,
+    start_time: null,
+    end_time: null,
+    is_all_day: true,
     estimated_hours: 12,
     actual_hours: null,
     created_at: '2024-01-17T10:00:00Z',
@@ -76,6 +93,10 @@ const guestTasks: Task[] = [
     assigned_to: null,
     created_by: 'guest-user',
     due_date: '2024-02-05',
+    start_date: null,
+    start_time: null,
+    end_time: null,
+    is_all_day: true,
     estimated_hours: 6,
     actual_hours: null,
     created_at: '2024-01-25T10:00:00Z',
@@ -91,6 +112,10 @@ const guestTasks: Task[] = [
     assigned_to: null,
     created_by: 'guest-user',
     due_date: '2024-02-28',
+    start_date: null,
+    start_time: null,
+    end_time: null,
+    is_all_day: true,
     estimated_hours: 4,
     actual_hours: null,
     created_at: '2024-01-26T10:00:00Z',
@@ -99,180 +124,196 @@ const guestTasks: Task[] = [
 ];
 
 export const useTasks = (projectId?: string) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
-  const isGuestMode = user && 'isGuest' in user;
-
-  useEffect(() => {
-    if (isGuestMode) {
-      const filteredTasks = projectId 
-        ? guestTasks.filter(task => task.project_id === projectId)
-        : guestTasks;
-      setTasks(filteredTasks);
-      setLoading(false);
-      return;
-    }
-
-    if (!user) {
-      setTasks([]);
-      setLoading(false);
-      return;
-    }
-
-    fetchTasks();
-  }, [user, isGuestMode, projectId]);
+  const { isDummyMode } = useDummyMode();
+  const queryClient = useQueryClient();
 
   const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
+    if (isDummyMode) {
+      return projectId ? guestTasks.filter(t => t.project_id === projectId) : guestTasks;
+    }
+    if (!user) return [];
+
+    if (projectId) {
+      // If specific project ID is provided, just fetch tasks for that project
+      const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false });
+      
+      if (error) throw new Error(error.message);
+      return data;
+    } else {
+      // If no specific project, fetch tasks from all user's projects
+      // Step 1: Get user's projects (owned + assigned)
+      const { data: ownedProjects, error: ownedError } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('owner_id', user.id);
 
-      if (projectId) {
-        query = query.eq('project_id', projectId);
+      if (ownedError) throw new Error(ownedError.message);
+
+      const { data: assignments, error: assignmentError } = await supabase
+        .from('project_assignments')
+        .select('project_id')
+        .eq('profile_id', user.id);
+
+      if (assignmentError) throw new Error(assignmentError.message);
+
+      // Step 2: Combine project IDs
+      const ownedProjectIds = ownedProjects?.map(p => p.id) || [];
+      const assignedProjectIds = assignments?.map(a => a.project_id) || [];
+      const allProjectIds = [...new Set([...ownedProjectIds, ...assignedProjectIds])];
+
+      if (allProjectIds.length === 0) {
+        return []; // User has no projects
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        setError(error.message);
-      } else {
-        setTasks(data || []);
-      }
-    } catch (err) {
-      console.error('Error in fetchTasks:', err);
-      setError('Wystąpił błąd podczas ładowania zadań');
-    } finally {
-      setLoading(false);
+      // Step 3: Fetch tasks from user's projects
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .in('project_id', allProjectIds)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw new Error(error.message);
+      return data;
     }
   };
 
-  const createTask = async (taskData: {
-    title: string;
-    description?: string;
-    status?: 'todo' | 'in_progress' | 'review' | 'done';
-    priority?: 'low' | 'medium' | 'high' | 'urgent';
-    project_id: string;
-    assigned_to?: string;
-    due_date?: string;
-    estimated_hours?: number;
-  }) => {
-    if (isGuestMode) {
-      // In guest mode, simulate task creation
-      const newTask: Task = {
-        id: `guest-task-${Date.now()}`,
-        title: taskData.title,
-        description: taskData.description || null,
-        status: taskData.status || 'todo',
-        priority: taskData.priority || 'medium',
-        project_id: taskData.project_id,
-        assigned_to: taskData.assigned_to || null,
-        created_by: 'guest-user',
-        due_date: taskData.due_date || null,
-        estimated_hours: taskData.estimated_hours || null,
-        actual_hours: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setTasks(prev => [newTask, ...prev]);
-      return newTask;
-    }
+  const { data: tasks = [], isLoading, isError, error } = useQuery<Task[]>({
+    queryKey: ['tasks', projectId || 'all', isDummyMode],
+    queryFn: fetchTasks,
+    enabled: !!user || isDummyMode,
+  });
 
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert([{
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'actual_hours'>) => {
+      if (isDummyMode) {
+        const newTask: Task = {
+          id: `guest-task-${Date.now()}`,
           ...taskData,
-          created_by: user.id
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating task:', error);
-        throw error;
+          created_by: 'guest-user',
+          actual_hours: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], (old: Task[] = []) => [newTask, ...old]);
+        return newTask;
       }
-
-      await fetchTasks();
-      return data;
-    } catch (err) {
-      console.error('Error in createTask:', err);
-      throw err;
-    }
-  };
-
-  const updateTask = async (taskId: string, updates: Partial<Task>) => {
-    if (isGuestMode) {
-      // In guest mode, simulate task update
-      setTasks(prev => prev.map(task => 
-        task.id === taskId 
-          ? { ...task, ...updates, updated_at: new Date().toISOString() }
-          : task
-      ));
-      return null;
-    }
-
-    try {
+      if (!user) throw new Error("User not authenticated");
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
-        .eq('id', taskId)
+        .insert([{ ...taskData, created_by: user.id }])
         .select()
         .single();
-
-      if (error) {
-        console.error('Error updating task:', error);
-        throw error;
-      }
-
-      await fetchTasks();
+      if (error) throw new Error(error.message);
       return data;
-    } catch (err) {
-      console.error('Error in updateTask:', err);
-      throw err;
-    }
-  };
+    },
+    onMutate: async (newTaskData) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<Task[]>(['tasks', projectId || 'all', isDummyMode]);
 
-  const deleteTask = async (taskId: string) => {
-    if (isGuestMode) {
-      // In guest mode, simulate task deletion
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      return;
-    }
+      queryClient.setQueryData<Task[]>(['tasks', projectId || 'all', isDummyMode], (old) => {
+        const optimisticTask: Task = {
+          id: `optimistic-${Date.now()}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: user?.id || 'unknown',
+          actual_hours: null,
+          ...newTaskData,
+        };
+        return old ? [optimisticTask, ...old] : [optimisticTask];
+      });
 
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId);
-
-      if (error) {
-        console.error('Error deleting task:', error);
-        throw error;
+      return { previousTasks };
+    },
+    onError: (err, newTodo, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], context.previousTasks);
       }
+      toast.error('Nie udało się dodać zadania.');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId || 'all', isDummyMode] });
+    },
+  });
 
-      await fetchTasks();
-    } catch (err) {
-      console.error('Error in deleteTask:', err);
-      throw err;
-    }
-  };
+  const updateTaskMutation = useMutation({
+    mutationFn: async (taskData: Partial<Task> & { id: string }) => {
+      if (isDummyMode) {
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], (old: Task[] = []) => old.map(t => t.id === taskData.id ? {...t, ...taskData} : t));
+        return taskData;
+      }
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ ...taskData, updated_at: new Date().toISOString() })
+        .eq('id', taskData.id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onMutate: async (updatedTask) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<Task[]>(['tasks', projectId || 'all', isDummyMode]);
+      
+      queryClient.setQueryData<Task[]>(
+        ['tasks', projectId || 'all', isDummyMode],
+        (old) => old?.map(task => task.id === updatedTask.id ? { ...task, ...updatedTask } : task) || []
+      );
+
+      return { previousTasks };
+    },
+    onError: (err, newTodo, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], context.previousTasks);
+      }
+       toast.error('Nie udało się zaktualizować zadania.');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId || 'all', isDummyMode] });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      if (isDummyMode) {
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], (old: Task[] = []) => old.filter(t => t.id !== taskId));
+        return;
+      }
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) throw new Error(error.message);
+    },
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<Task[]>(['tasks', projectId || 'all', isDummyMode]);
+
+      queryClient.setQueryData<Task[]>(
+        ['tasks', projectId || 'all', isDummyMode],
+        (old) => old?.filter(task => task.id !== taskId) || []
+      );
+      
+      return { previousTasks };
+    },
+    onError: (err, newTodo, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks', projectId || 'all', isDummyMode], context.previousTasks);
+      }
+      toast.error('Nie udało się usunąć zadania.');
+    },
+     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId || 'all', isDummyMode] });
+    },
+  });
 
   return {
     tasks,
-    loading,
-    error,
-    createTask,
-    updateTask,
-    deleteTask,
-    refetch: fetchTasks
+    loading: isLoading,
+    error: error as Error | null,
+    createTask: createTaskMutation.mutateAsync,
+    updateTask: updateTaskMutation.mutateAsync,
+    deleteTask: deleteTaskMutation.mutateAsync,
   };
 };

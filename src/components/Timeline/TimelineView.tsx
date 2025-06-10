@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,16 +8,23 @@ import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, addMonths, subMonths } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
-const TimelineView = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedProject, setSelectedProject] = useState<string>('all');
-  const { projects } = useProjects();
-  const { tasks } = useTasks();
+interface TimelineViewProps {
+  currentDate?: Date;
+  selectedProject?: string;
+}
 
-  // Filtracja zadań według wybranego projektu
-  const filteredTasks = selectedProject === 'all' 
-    ? tasks 
-    : tasks.filter(task => task.project_id === selectedProject);
+const TimelineView: React.FC<TimelineViewProps> = ({ 
+  currentDate: externalCurrentDate, 
+  selectedProject: externalSelectedProject 
+}) => {
+  const [internalCurrentDate, setInternalCurrentDate] = useState(new Date());
+  const [internalSelectedProject, setInternalSelectedProject] = useState<string>('all');
+  
+  // Use external props when available, otherwise use internal state
+  const currentDate = externalCurrentDate || internalCurrentDate;
+  const selectedProject = externalSelectedProject || internalSelectedProject;
+  const { projects } = useProjects();
+  const { tasks, loading, error } = useTasks(selectedProject === 'all' ? undefined : selectedProject);
 
   // Generowanie dni miesiąca
   const monthStart = startOfMonth(currentDate);
@@ -27,9 +33,9 @@ const TimelineView = () => {
 
   // Grupowanie zadań według daty
   const tasksByDate = useMemo(() => {
-    const grouped: { [key: string]: typeof filteredTasks } = {};
+    const grouped: { [key: string]: typeof tasks } = {};
     
-    filteredTasks.forEach(task => {
+    tasks.forEach(task => {
       if (task.due_date) {
         const dateKey = format(parseISO(task.due_date), 'yyyy-MM-dd');
         if (!grouped[dateKey]) {
@@ -40,7 +46,7 @@ const TimelineView = () => {
     });
     
     return grouped;
-  }, [filteredTasks]);
+  }, [tasks]);
 
   const getTasksForDay = (day: Date) => {
     const dateKey = format(day, 'yyyy-MM-dd');
@@ -68,65 +74,88 @@ const TimelineView = () => {
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    if (!externalCurrentDate) {
+      setInternalCurrentDate(direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-400">Błąd: {error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">Timeline projektów</h1>
-          <p className="text-gray-400 mt-2">Wizualizacja terminów i harmonogramów</p>
+      {/* Header - tylko gdy TimelineView jest standalone */}
+      {!externalCurrentDate && !externalSelectedProject && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">Timeline projektów</h1>
+            <p className="text-gray-400 mt-2">Wizualizacja terminów i harmonogramów</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Kontrolki nawigacji i filtrów */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('prev')}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          
-          <h2 className="text-xl font-semibold min-w-[200px] text-center">
-            {format(currentDate, 'LLLL yyyy', { locale: pl })}
-          </h2>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateMonth('next')}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
+      {/* Kontrolki nawigacji i filtrów - tylko gdy TimelineView jest standalone */}
+      {!externalCurrentDate && !externalSelectedProject && (
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            
+            <h2 className="text-xl font-semibold min-w-[200px] text-center">
+              {format(currentDate, 'LLLL yyyy', { locale: pl })}
+            </h2>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
 
-        <div className="flex items-center space-x-4">
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Wybierz projekt" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie projekty</SelectItem>
-              {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Button
-            variant="outline"
-            onClick={() => setCurrentDate(new Date())}
-          >
-            Dzisiaj
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Select value={selectedProject} onValueChange={setInternalSelectedProject}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Wybierz projekt" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie projekty</SelectItem>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              onClick={() => setInternalCurrentDate(new Date())}
+            >
+              Dzisiaj
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Kalendarz timeline */}
       <Card>

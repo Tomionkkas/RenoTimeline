@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock, User, CheckCircle2 } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
@@ -33,7 +32,11 @@ const statusLabels = {
   todo: 'Do zrobienia',
 };
 
-const RecentTasks: React.FC = () => {
+interface RecentTasksProps {
+  onTaskSelect: (task: any) => void;
+}
+
+const RecentTasks: React.FC<RecentTasksProps> = ({ onTaskSelect }) => {
   const { tasks, loading } = useTasks();
 
   if (loading) {
@@ -90,7 +93,8 @@ const RecentTasks: React.FC = () => {
             {recentTasks.map((task, index) => (
               <div
                 key={task.id}
-                className="p-4 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-gray-600 transition-all duration-200 animate-fade-in"
+                onClick={() => onTaskSelect(task)}
+                className="p-4 rounded-lg bg-gray-800/50 border border-gray-700 hover:border-gray-600 transition-all duration-200 animate-fade-in cursor-pointer"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-start justify-between mb-3">

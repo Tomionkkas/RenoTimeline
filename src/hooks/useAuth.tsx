@@ -1,90 +1,49 @@
-
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useContext, createContext, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
-interface GuestUser {
-  id: string;
-  user_metadata: {
-    first_name: string;
-    last_name: string;
-  };
-  email: string;
-  isGuest: true;
+// Define the shape of user metadata
+interface UserMetadata {
+  first_name?: string;
+  last_name?: string;
+  // Add other metadata fields as needed
 }
 
-export const useAuth = () => {
-  const [user, setUser] = useState<User | GuestUser | null>(null);
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signOut: () => Promise<void>;
+  updateUser: (metadata: Partial<User['user_metadata']>) => Promise<User | undefined>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Funkcja do sprawdzania trybu gościa
-  const checkGuestMode = useCallback(() => {
-    const isGuestMode = localStorage.getItem('renotimeline_guest_mode') === 'true';
-    if (isGuestMode) {
-      const guestUser: GuestUser = {
-        id: 'guest-user',
-        user_metadata: {
-          first_name: 'Gość',
-          last_name: 'Użytkownik'
-        },
-        email: 'guest@renotimeline.pl',
-        isGuest: true
-      };
-      return guestUser;
-    }
-    return null;
-  }, []);
-
   useEffect(() => {
-    // Najpierw sprawdź tryb gościa
-    const guestUser = checkGuestMode();
-    if (guestUser) {
-      setUser(guestUser);
-      setLoading(false);
-      return;
-    }
-
-    // Get initial session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
-    };
-
-    getSession();
-
-    // Listen for auth changes
+    // onAuthStateChange fires immediately with the current session,
+    // so we don't need a separate getSession() call.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Sprawdź czy nie jesteśmy w trybie gościa
-        const guestUser = checkGuestMode();
-        if (guestUser) {
-          setUser(guestUser);
-        } else {
-          setUser(session?.user ?? null);
-        }
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // Listener dla zmian localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'renotimeline_guest_mode') {
-        const guestUser = checkGuestMode();
-        setUser(guestUser);
-        setLoading(false);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('storage', handleStorageChange);
     };
-  }, [checkGuestMode]);
+  }, []);
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -95,67 +54,53 @@ export const useAuth = () => {
         }
       },
     });
+    // The trigger now handles profile creation.
     return { data, error };
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     return { data, error };
-  };
-
-  const signOut = async () => {
-    // Clear guest mode
-    localStorage.removeItem('renotimeline_guest_mode');
-    const { error } = await supabase.auth.signOut();
-    setUser(null);
-    return { error };
-  };
-
-  const signInAsGuest = useCallback(() => {
-    localStorage.setItem('renotimeline_guest_mode', 'true');
-    const guestUser: GuestUser = {
-      id: 'guest-user',
-      user_metadata: {
-        first_name: 'Gość',
-        last_name: 'Użytkownik'
-      },
-      email: 'guest@renotimeline.pl',
-      isGuest: true
-    };
-    
-    // Immediate state update
-    setUser(guestUser);
-    
-    // Wywołaj zdarzenie storage dla innych komponentów
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'renotimeline_guest_mode',
-      newValue: 'true'
-    }));
   }, []);
 
-  const exitGuestMode = useCallback(() => {
-    localStorage.removeItem('renotimeline_guest_mode');
-    
-    // Immediate state update
-    setUser(null);
-    
-    // Wywołaj zdarzenie storage dla innych komponentów
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'renotimeline_guest_mode',
-      newValue: null
-    }));
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
-  return {
+  const updateUser = useCallback(async (metadata: Partial<User['user_metadata']>) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: metadata,
+    });
+    
+    if (error) {
+      toast.error("Błąd podczas aktualizacji profilu: " + error.message);
+      throw error;
+    }
+    
+    toast.success("Profil został pomyślnie zaktualizowany.");
+    return data.user;
+  }, []);
+
+  const value = useMemo(() => ({
     user,
+    session,
     loading,
     signUp,
     signIn,
     signOut,
-    signInAsGuest,
-    exitGuestMode,
-  };
+    updateUser,
+  }), [user, session, loading, signUp, signIn, signOut, updateUser]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

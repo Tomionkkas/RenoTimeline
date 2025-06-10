@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
+import { CustomFieldsSection } from '@/components/ui/CustomFieldsSection';
+import { useCustomFieldValues } from '@/hooks/useCustomFieldValues';
 import TaskChecklist from './TaskChecklist';
 import TaskReminders from './TaskReminders';
+import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
 import { toast } from 'sonner';
 
 interface TaskDetailsDialogProps {
@@ -32,6 +36,9 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
     estimated_hours: task?.estimated_hours?.toString() || ''
   });
 
+  // Create a simple form for custom fields only
+  const customFieldsForm = useForm();
+
   React.useEffect(() => {
     if (task) {
       setFormData({
@@ -49,14 +56,32 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
     if (!task) return;
 
     try {
-      await updateTask(task.id, {
+      const updates = {
         title: formData.title,
         description: formData.description || null,
         status: formData.status as any,
         priority: formData.priority as any,
         due_date: formData.due_date || null,
         estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : null
-      });
+      };
+
+      await updateTask(task.id, updates);
+      
+      // Trigger workflows if status changed
+      if (task.status !== formData.status) {
+        try {
+          await WorkflowTriggers.onTaskStatusChanged(
+            task.id,
+            task.project_id,
+            task.status,
+            formData.status,
+            'current-user-id' // This should come from auth context
+          );
+        } catch (workflowError) {
+          console.error('Workflow trigger failed:', workflowError);
+          // Don't fail the update if workflow triggers fail
+        }
+      }
       
       setIsEditing(false);
       toast.success('Zadanie zostało zaktualizowane');
@@ -105,8 +130,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
           <DialogTitle className="flex items-center justify-between">
             {isEditing ? (
               <Input
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                {...form.register('title')}
                 className="text-lg font-semibold"
               />
             ) : (
@@ -126,10 +150,14 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
         </DialogHeader>
 
         <Tabs defaultValue="details" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details" className="flex items-center space-x-2">
               <FileText className="w-4 h-4" />
               <span>Szczegóły</span>
+            </TabsTrigger>
+            <TabsTrigger value="custom-fields" className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span>Pola</span>
             </TabsTrigger>
             <TabsTrigger value="checklist" className="flex items-center space-x-2">
               <CheckSquare className="w-4 h-4" />
@@ -274,6 +302,18 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="custom-fields" className="overflow-y-auto max-h-[60vh]">
+            <CustomFieldsSection
+              entityType="task"
+              entityId={task.id}
+              projectId={task.project_id}
+              control={form.control}
+              setValue={form.setValue}
+              errors={form.formState.errors}
+              disabled={!isEditing}
+            />
           </TabsContent>
 
           <TabsContent value="checklist" className="overflow-y-auto max-h-[60vh]">

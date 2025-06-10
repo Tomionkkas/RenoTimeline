@@ -8,4 +8,17 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storage: localStorage, // Use localStorage for session storage
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false, // Set to false if you are not using OAuth callbacks in the URL
+  },
+  db: {
+    schema: 'public', // Explicitly set the schema
+  },
+  global: {
+    headers: { 'x-realtime-revalidate': 'true' }, // Force revalidation for realtime
+  },
+});

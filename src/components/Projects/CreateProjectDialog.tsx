@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -37,10 +36,10 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, onOpenC
     try {
       const projectData = {
         name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        start_date: formData.start_date || undefined,
-        end_date: formData.end_date || undefined,
-        budget: formData.budget ? parseFloat(formData.budget) : undefined
+        description: formData.description.trim() || null,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        budget: formData.budget ? parseFloat(formData.budget) : null
       };
 
       await createProject(projectData);

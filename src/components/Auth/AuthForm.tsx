@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   
-  const { signIn, signUp, signInAsGuest, user } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
 
   // Monitor user state changes
@@ -71,16 +70,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSkipLogin = () => {
-    setLoading(true);
-    signInAsGuest();
-    
-    toast({
-      title: 'Tryb gościa aktywowany',
-      description: 'Możesz korzystać z aplikacji, ale dane nie będą zachowane po odświeżeniu.',
-    });
   };
 
   return (
@@ -191,22 +180,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                   : 'Masz już konto? Zaloguj się'
                 }
               </Button>
-              
-              {!isLogin && (
-                <div className="pt-2 border-t border-gray-800">
-                  <Button 
-                    variant="ghost" 
-                    className="text-sm text-gray-400 hover:text-white transition-all duration-300 hover:scale-105"
-                    onClick={handleSkipLogin}
-                    disabled={loading}
-                  >
-                    Pomiń logowanie i kontynuuj jako gość
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dane nie będą zachowane po odświeżeniu strony
-                  </p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

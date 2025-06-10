@@ -1,57 +1,41 @@
-
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useDummyMode } from './useDummyMode';
 
 export const useOnboarding = () => {
+  const { user, loading: authLoading } = useAuth();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-
-  const isGuestMode = user && 'isGuest' in user;
+  const { isDummyMode } = useDummyMode();
 
   useEffect(() => {
-    const checkOnboardingStatus = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
 
-      // For guest users, always show onboarding since they start fresh
-      if (isGuestMode) {
-        setNeedsOnboarding(true);
-        setLoading(false);
-        return;
-      }
+    if (isDummyMode) {
+      setNeedsOnboarding(false);
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // Check if user has any projects
-        const { data: projects, error } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('owner_id', user.id)
-          .limit(1);
+    if (user && user.user_metadata) {
+      setNeedsOnboarding(!user.user_metadata.onboarding_completed);
+    } else {
+      setNeedsOnboarding(false);
+    }
+    setLoading(false);
+  }, [user, authLoading, isDummyMode]);
 
-        if (error) {
-          console.error('Error checking projects:', error);
-          setNeedsOnboarding(true);
-        } else {
-          // If no projects exist, user needs onboarding
-          setNeedsOnboarding(projects.length === 0);
-        }
-      } catch (error) {
-        console.error('Error in onboarding check:', error);
-        setNeedsOnboarding(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkOnboardingStatus();
-  }, [user, isGuestMode]);
-
-  const completeOnboarding = () => {
-    setNeedsOnboarding(false);
+  const completeOnboarding = async () => {
+    if (user) {
+      await supabase.auth.updateUser({
+        data: { onboarding_completed: true },
+      });
+      setNeedsOnboarding(false);
+    }
   };
 
   return {

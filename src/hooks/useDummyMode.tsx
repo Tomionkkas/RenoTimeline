@@ -1,25 +1,39 @@
+import React, { createContext, useState, useContext, ReactNode, useMemo } from 'react';
 
-import { useState, useEffect } from 'react';
+interface DummyModeContextType {
+  isDummyMode: boolean;
+  toggleDummyMode: () => void;
+}
 
-export const useDummyMode = () => {
-  const [isDummyMode, setIsDummyMode] = useState(false);
+const DummyModeContext = createContext<DummyModeContextType | undefined>(undefined);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('renotimeline_dummy_mode');
-    setIsDummyMode(saved === 'true');
-  }, []);
+export const DummyModeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isDummyMode, setIsDummyMode] = useState(() => {
+    // Initialize state from localStorage if available
+    return localStorage.getItem('dummyMode') === 'true';
+  });
 
   const toggleDummyMode = () => {
-    const newValue = !isDummyMode;
-    setIsDummyMode(newValue);
-    localStorage.setItem('renotimeline_dummy_mode', newValue.toString());
-    
-    // Trigger storage event for other components
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'renotimeline_dummy_mode',
-      newValue: newValue.toString()
-    }));
+    setIsDummyMode(prevMode => {
+      const newMode = !prevMode;
+      localStorage.setItem('dummyMode', JSON.stringify(newMode));
+      return newMode;
+    });
   };
+  
+  const value = useMemo(() => ({ isDummyMode, toggleDummyMode }), [isDummyMode]);
 
-  return { isDummyMode, toggleDummyMode };
+  return (
+    <DummyModeContext.Provider value={value}>
+      {children}
+    </DummyModeContext.Provider>
+  );
 };
+
+export const useDummyMode = (): DummyModeContextType => {
+  const context = useContext(DummyModeContext);
+  if (context === undefined) {
+    throw new Error('useDummyMode must be used within a DummyModeProvider');
+  }
+  return context;
+}; 

@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthForm from './AuthForm';
 import TransitionWrapper from './TransitionWrapper';
+import { useDummyMode } from '@/hooks/useDummyMode';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,11 +10,12 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const { isDummyMode } = useDummyMode();
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
+      if (!user && !isDummyMode) {
         // Quick delay before showing auth
         setTimeout(() => {
           setShowAuth(true);
@@ -23,7 +24,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         setShowAuth(false);
       }
     }
-  }, [user, loading]);
+  }, [user, loading, isDummyMode]);
 
   if (loading) {
     return (
@@ -45,7 +46,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   return (
-    <TransitionWrapper show={!!user} delay={50} className="page-transition" exitDuration={200}>
+    <TransitionWrapper show={!!user || isDummyMode} delay={50} className="page-transition" exitDuration={200}>
       {children}
     </TransitionWrapper>
   );

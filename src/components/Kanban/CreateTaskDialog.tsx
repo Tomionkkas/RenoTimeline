@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTasks } from '@/hooks/useTasks';
 import { toast } from 'sonner';
+import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
+import { supabase } from '../../integrations/supabase/client';
 
 interface Project {
   id: string;
@@ -30,15 +31,6 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
     status: 'todo' as 'todo' | 'in_progress' | 'review' | 'done',
     due_date: '',
     estimated_hours: ''
-  });
-  
-  // Nowe pola dla checklist i przypomnień
-  const [checklistItems, setChecklistItems] = useState<string[]>(['']);
-  const [createReminder, setCreateReminder] = useState(false);
-  const [reminderData, setReminderData] = useState({
-    reminder_time: '',
-    reminder_type: 'notification' as 'email' | 'notification' | 'both',
-    message: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,17 +59,32 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         priority: formData.priority,
         status: formData.status,
         due_date: formData.due_date || undefined,
-        estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined
+        estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
+        assigned_to: undefined,
+        start_date: undefined,
+        start_time: undefined,
+        end_time: undefined,
+        is_all_day: true,
       };
 
       const newTask = await createTask(taskData);
       
-      if (newTask) {
-        // TODO: Dodaj obsługę tworzenia checklisty i przypomnień po utworzeniu zadania
-        // To wymagałoby importu odpowiednich hooków tutaj
-        
-        toast.success('Zadanie zostało utworzone pomyślnie!');
+      // Trigger workflow for task creation
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && newTask?.id) {
+          await WorkflowTriggers.onTaskCreated(
+            newTask.id,
+            formData.project_id,
+            user.id,
+            taskData.assigned_to
+          );
+        }
+      } catch (error) {
+        console.error('Error triggering task creation workflow:', error);
       }
+      
+      toast.success('Zadanie zostało utworzone pomyślnie!');
       
       // Reset form
       setFormData({
@@ -88,13 +95,6 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         status: 'todo',
         due_date: '',
         estimated_hours: ''
-      });
-      setChecklistItems(['']);
-      setCreateReminder(false);
-      setReminderData({
-        reminder_time: '',
-        reminder_type: 'notification',
-        message: ''
       });
       
       onOpenChange(false);
@@ -113,21 +113,9 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
     }));
   };
 
-  const addChecklistItem = () => {
-    setChecklistItems(prev => [...prev, '']);
-  };
-
-  const updateChecklistItem = (index: number, value: string) => {
-    setChecklistItems(prev => prev.map((item, i) => i === index ? value : item));
-  };
-
-  const removeChecklistItem = (index: number) => {
-    setChecklistItems(prev => prev.filter((_, i) => i !== index));
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Nowe zadanie</DialogTitle>
           <DialogDescription>
@@ -228,83 +216,6 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
                 min="0"
               />
             </div>
-          </div>
-
-          {/* Sekcja checklist - uproszczona */}
-          <div className="space-y-2">
-            <Label>Checklist początkowy (opcjonalny)</Label>
-            <div className="space-y-2">
-              {checklistItems.map((item, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    placeholder={`Element checklist ${index + 1}...`}
-                    value={item}
-                    onChange={(e) => updateChecklistItem(index, e.target.value)}
-                  />
-                  {checklistItems.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeChecklistItem(index)}
-                    >
-                      Usuń
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addChecklistItem}
-              >
-                Dodaj element
-              </Button>
-            </div>
-          </div>
-
-          {/* Sekcja przypomnienia - uproszczona */}
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="create_reminder"
-                checked={createReminder}
-                onCheckedChange={(checked) => setCreateReminder(!!checked)}
-              />
-              <Label htmlFor="create_reminder">Dodaj przypomnienie</Label>
-            </div>
-            
-            {createReminder && (
-              <div className="space-y-2 pl-6 border-l-2 border-gray-200">
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="datetime-local"
-                    value={reminderData.reminder_time}
-                    onChange={(e) => setReminderData(prev => ({ ...prev, reminder_time: e.target.value }))}
-                    placeholder="Kiedy przypomnieć?"
-                  />
-                  <Select 
-                    value={reminderData.reminder_type} 
-                    onValueChange={(value) => setReminderData(prev => ({ ...prev, reminder_type: value as any }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="notification">Powiadomienie</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="both">Oba</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Input
-                  placeholder="Niestandardowa wiadomość (opcjonalnie)..."
-                  value={reminderData.message}
-                  onChange={(e) => setReminderData(prev => ({ ...prev, message: e.target.value }))}
-                />
-              </div>
-            )}
           </div>
           
           <DialogFooter>

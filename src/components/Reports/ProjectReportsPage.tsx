@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,31 +7,28 @@ import { useTasks } from '@/hooks/useTasks';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Download, FileText, Calendar, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const ProjectReportsPage = () => {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const { projects } = useProjects();
-  const { tasks } = useTasks();
+  const { tasks, loading, error } = useTasks(selectedProject === 'all' ? undefined : selectedProject);
   const { toast } = useToast();
-
-  // Filtracja zadań według wybranego projektu
-  const filteredTasks = selectedProject === 'all' 
-    ? tasks 
-    : tasks.filter(task => task.project_id === selectedProject);
 
   // Dane do wykresów
   const statusData = [
-    { name: 'Do zrobienia', value: filteredTasks.filter(t => t.status === 'todo').length, color: '#ef4444' },
-    { name: 'W trakcie', value: filteredTasks.filter(t => t.status === 'in_progress').length, color: '#f59e0b' },
-    { name: 'Do przeglądu', value: filteredTasks.filter(t => t.status === 'review').length, color: '#3b82f6' },
-    { name: 'Ukończone', value: filteredTasks.filter(t => t.status === 'done').length, color: '#10b981' }
+    { name: 'Do zrobienia', value: tasks.filter(t => t.status === 'todo').length, color: '#ef4444' },
+    { name: 'W trakcie', value: tasks.filter(t => t.status === 'in_progress').length, color: '#f59e0b' },
+    { name: 'Do przeglądu', value: tasks.filter(t => t.status === 'review').length, color: '#3b82f6' },
+    { name: 'Ukończone', value: tasks.filter(t => t.status === 'done').length, color: '#10b981' }
   ];
 
   const priorityData = [
-    { name: 'Niska', value: filteredTasks.filter(t => t.priority === 'low').length },
-    { name: 'Średnia', value: filteredTasks.filter(t => t.priority === 'medium').length },
-    { name: 'Wysoka', value: filteredTasks.filter(t => t.priority === 'high').length },
-    { name: 'Pilna', value: filteredTasks.filter(t => t.priority === 'urgent').length }
+    { name: 'Niska', value: tasks.filter(t => t.priority === 'low').length },
+    { name: 'Średnia', value: tasks.filter(t => t.priority === 'medium').length },
+    { name: 'Wysoka', value: tasks.filter(t => t.priority === 'high').length },
+    { name: 'Pilna', value: tasks.filter(t => t.priority === 'urgent').length }
   ];
 
   const projectProgress = projects.map(project => {
@@ -50,7 +46,16 @@ const ProjectReportsPage = () => {
   });
 
   const handleExportCSV = () => {
-    const csvData = filteredTasks.map(task => ({
+    if (tasks.length === 0) {
+      toast({
+        title: 'Brak danych do eksportu',
+        description: 'Wybierz projekt z zadaniami, aby wygenerować raport.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const csvData = tasks.map(task => ({
       'Tytuł': task.title,
       'Status': task.status,
       'Priorytet': task.priority,
@@ -78,13 +83,78 @@ const ProjectReportsPage = () => {
   };
 
   const handleExportPDF = () => {
-    // Symulacja eksportu PDF
-    toast({
-      title: 'Eksport PDF',
-      description: 'Funkcja eksportu PDF będzie dostępna wkrótce',
-      variant: 'destructive',
-    });
+    try {
+      if (tasks.length === 0) {
+        toast({
+          title: 'Brak danych do eksportu',
+          description: 'Wybierz projekt z zadaniami, aby wygenerować raport PDF.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const doc = new jsPDF();
+      const project = projects.find(p => p.id === selectedProject);
+      const title = `Raport Zadań dla: ${project ? project.name : 'Wszystkich Projektów'}`;
+      const date = `Wygenerowano: ${new Date().toLocaleString('pl-PL')}`;
+
+      doc.setFontSize(18);
+      doc.text(title, 14, 22);
+      doc.setFontSize(11);
+      doc.text(date, 14, 30);
+
+      const tableColumn = ["Tytuł", "Status", "Priorytet", "Termin"];
+      const tableRows: (string | number | null)[][] = [];
+
+      tasks.forEach(task => {
+        const taskData = [
+          task.title || 'Brak tytułu',
+          task.status || 'Brak statusu',
+          task.priority || 'Brak priorytetu',
+          task.due_date ? new Date(task.due_date).toLocaleDateString('pl-PL') : 'Brak',
+        ];
+        tableRows.push(taskData);
+      });
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        theme: 'grid',
+        headStyles: { fillColor: [22, 163, 74] },
+      });
+
+      doc.save(`raport_zadan_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast({
+        title: 'Eksport PDF zakończony',
+        description: 'Raport został pobrany jako plik PDF',
+      });
+    } catch (error) {
+      console.error("Błąd podczas generowania PDF:", error);
+      toast({
+        title: 'Błąd eksportu PDF',
+        description: 'Nie udało się wygenerować raportu. Sprawdź konsolę, aby uzyskać więcej informacji.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-400">Błąd: {error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -140,7 +210,7 @@ const ProjectReportsPage = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredTasks.length}</div>
+            <div className="text-2xl font-bold">{tasks.length}</div>
           </CardContent>
         </Card>
 
@@ -151,7 +221,7 @@ const ProjectReportsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {filteredTasks.filter(t => t.status === 'done').length}
+              {tasks.filter(t => t.status === 'done').length}
             </div>
           </CardContent>
         </Card>
@@ -163,7 +233,7 @@ const ProjectReportsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-500">
-              {filteredTasks.filter(t => t.status === 'in_progress').length}
+              {tasks.filter(t => t.status === 'in_progress').length}
             </div>
           </CardContent>
         </Card>
@@ -175,8 +245,8 @@ const ProjectReportsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredTasks.length > 0 
-                ? Math.round((filteredTasks.filter(t => t.status === 'done').length / filteredTasks.length) * 100)
+              {tasks.length > 0 
+                ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100)
                 : 0}%
             </div>
           </CardContent>
