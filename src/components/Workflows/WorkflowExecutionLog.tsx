@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, RefreshCw, AlertCircle, CheckCircle, Clock, XCircle, RotateCcw, Trash2, Filter, TrendingUp, Activity, Zap } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertCircle, CheckCircle, Clock, XCircle, RotateCcw, Trash2, Filter, TrendingUp, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { supabase } from '../../integrations/supabase/client';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -42,26 +43,47 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
     getExecutionStats
   } = useWorkflowExecution(workflowId);
 
-  const [statusFilter, setStatusFilter] = useState<WorkflowExecutionStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'success' | 'failed' | 'partial' | 'all'>('all');
   const [stats, setStats] = useState({ total: 0, successful: 0, failed: 0, running: 0, successRate: 0 });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10); // Show only 10 executions per page
+
   useEffect(() => {
-    const loadStats = async () => {
+    const loadData = async () => {
       try {
-        const executionStats = await getExecutionStats();
+        // Fetch stats for all executions
+        const executionStats = await getExecutionStats(undefined);
         setStats(executionStats);
+        
+        // Fetch limited executions (recent only) - explicitly pass undefined to get ALL executions
+        await fetchExecutionHistory(undefined);
       } catch (error) {
-        console.error('Błąd podczas pobierania statystyk wykonań:', error);
-        // Set default stats if failed
+        console.error('Błąd podczas pobierania danych wykonań:', error);
         setStats({ total: 0, successful: 0, failed: 0, running: 0, successRate: 0 });
       }
     };
-    loadStats();
-  }, [executions, getExecutionStats]);
+    loadData();
+  }, [workflowId]);
 
   const filteredExecutions = executions.filter(execution => 
     statusFilter === 'all' || execution.status === statusFilter
   );
+
+  // Filter and paginate executions for display
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedExecutions = filteredExecutions.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredExecutions.length / pageSize);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   const handleRetry = async (executionId: string) => {
     try {
@@ -127,7 +149,7 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
         </Button>
         <div>
           <h2 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            📊 Historia wykonań workflow
+            Historia wykonań workflow
           </h2>
           <p className="text-gray-300 text-lg">
             Monitoruj i zarządzaj historią wykonań workflow
@@ -217,7 +239,7 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
         
         <Button 
           variant="outline" 
-          onClick={() => fetchExecutionHistory()}
+          onClick={() => fetchExecutionHistory(undefined)}
           className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-gray-500 transition-all duration-200"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -243,14 +265,14 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
       )}
 
       {/* Enhanced Executions List */}
-      {filteredExecutions.length === 0 ? (
+      {paginatedExecutions.length === 0 ? (
         <Card className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border-gray-600 shadow-xl animate-slideUp">
           <CardContent className="py-16">
             <div className="text-center">
               <div className="p-6 bg-gray-800/30 rounded-full mb-6 mx-auto w-fit">
                 <Clock className="h-16 w-16 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">📋 Nie znaleziono wykonań</h3>
+                              <h3 className="text-2xl font-bold text-white mb-4">Nie znaleziono wykonań</h3>
               <p className="text-gray-300 text-lg max-w-md mx-auto">
                 {statusFilter === 'all' 
                   ? 'Ten workflow nie został jeszcze wykonany'
@@ -262,7 +284,15 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
         </Card>
       ) : (
         <div className="space-y-6">
-          {filteredExecutions.map((execution, index) => {
+          {/* Pagination Info */}
+          <div className="flex justify-between items-center text-sm text-gray-400">
+            <span>
+              Wyświetlanie {startIndex + 1}-{Math.min(endIndex, filteredExecutions.length)} z {filteredExecutions.length} wykonań
+            </span>
+            <span>Strona {currentPage} z {totalPages}</span>
+          </div>
+
+          {paginatedExecutions.map((execution, index) => {
             const StatusIcon = statusIcons[execution.status];
             
             return (
@@ -383,6 +413,61 @@ export function WorkflowExecutionLog({ workflowId, onClose }: WorkflowExecutionL
               </Card>
             );
           })}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Poprzednia
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => 
+                    page === 1 || 
+                    page === totalPages || 
+                    Math.abs(page - currentPage) <= 1
+                  )
+                  .map((page, index, array) => (
+                    <React.Fragment key={page}>
+                      {index > 0 && array[index - 1] !== page - 1 && (
+                        <span className="text-gray-500">...</span>
+                      )}
+                      <Button
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className={
+                          currentPage === page
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "border-gray-600 text-gray-300 hover:bg-gray-800"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    </React.Fragment>
+                  ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Następna
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

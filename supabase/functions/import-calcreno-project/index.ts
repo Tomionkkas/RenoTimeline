@@ -57,10 +57,11 @@ serve(async (req) => {
 
     // Check if project already exists
     const { data: existingProject } = await supabaseClient
+      .schema('renotimeline_schema')
       .from('projects')
       .select('id')
       .eq('calcreno_project_id', projectData.calcreno_project_id)
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (existingProject) {
@@ -75,6 +76,7 @@ serve(async (req) => {
 
     // Create new project in RenoTimeline
     const { data: newProject, error: insertError } = await supabaseClient
+      .schema('renotimeline_schema')
       .from('projects')
       .insert({
         name: projectData.name,
@@ -82,12 +84,10 @@ serve(async (req) => {
         budget: projectData.budget || projectData.total_cost,
         start_date: projectData.start_date,
         end_date: projectData.end_date,
-        status: 'active',
-        owner_id: user.id,
-        source_app: 'calcreno',
+        status: 'planning',
+        user_id: user.id,
+        imported_from_calcreno: true,
         calcreno_project_id: projectData.calcreno_project_id,
-        calcreno_reference_url: projectData.calcreno_reference_url,
-        imported_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -100,12 +100,15 @@ serve(async (req) => {
       );
     }
 
-    // Automatically assign the user to the project
+    // Automatically assign the user to the project in the shared_schema
     const { error: assignmentError } = await supabaseClient
-      .from('project_assignments')
+      .schema('shared_schema')
+      .from('user_roles')
       .insert({
         project_id: newProject.id,
-        profile_id: user.id,
+        user_id: user.id,
+        role: 'owner',
+        app_name: 'renotimeline',
       });
 
     if (assignmentError) {

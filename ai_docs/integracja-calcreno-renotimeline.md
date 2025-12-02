@@ -193,36 +193,36 @@ interface CrossAppNotification {
 - 80%+ users klikają w powiadomienia cross-app
 - 30%+ users regularnie używa obu aplikacji
 
-## Faza 2: Smart Notifications
+## Faza 2: Smart Notifications (RenoTimeline → CalcReno)
 
 ### 🎯 Cel Fazy:
-Automatyczne wykrywanie ważnych wydarzeń i wysyłanie proaktywnych powiadomień między aplikacjami.
+Automatyczne wykrywanie ważnych wydarzeń w RenoTimeline i wysyłanie proaktywnych powiadomień do CalcReno. **Unidirectional flow: tylko RenoTimeline → CalcReno.**
 
 ### 📋 Zakres Prac:
 
-#### 2.1 **Automatic Event Detection w Obu Aplikacjach**
-**RenoTimeline Side:**
-- **Progress Updates** - zadanie wyskakuje i zostać ukończone
-- **Budget Alerts** - projekt przekracza zaplantowane ramy czasowe  
-- **Team Changes** - nowy członek zespołu, zmiany uprawnień
+#### 2.1 **Automatic Event Detection w RenoTimeline**
+**RenoTimeline Side (Event Sources):**
+- **Task Completion** - zadanie zostało ukończone zgodnie z planem
+- **Progress Milestones** - projekt osiągnął kluczowy milestone (25%, 50%, 75%, 100%)
+- **Timeline Changes** - przesunięcie harmonogramu, opóźnienia
+- **Budget Timeline Alerts** - projekt przekracza zaplanowane ramy czasowe
+- **Team Updates** - nowy członek zespołu, zmiany uprawnień, zmiany dostępności
+- **Critical Issues** - problemy wymagające uwagi w kosztorysie
 
-**CalcReno Side:**
-- **Cost Variations** - znaczące zmiany w kosztach materiałów
-- **Budget Revisions** - aktualizacja kosztorysu
-- **Supplier Issues** - zmiany cen, dostępności materiałów
-
-#### 2.2 **Rich Email Templates**
-**From RenoTimeline:**
+#### 2.2 **Rich Email Templates (RenoTimeline → CalcReno)**
+**Progress Update Template:**
 ```html
 📧 [RenoTimeline] Aktualizacja projektu "Remont kuchni"
 
-Część: 
-Mały aktualizacja z projektu "Remont kuchni":
+Cześć!
+
+Mała aktualizacja z projektu "Remont kuchni":
 ✅ Zadanie "Wymiana instalacji elektrycznej" zostało ukończone zgodnie z planem!
 
 🔍 Sugerujemy sprawdzenie w CalcReno:
 - Czy czas pracy był zgodny z kalkulacją
 - Czy nie ma oszczędności na kosztach robocizny
+- Można zaktualizować status w kosztorysie
 
 🔗 [Otwórz projekt w CalcReno] [Zobacz szczegóły w RenoTimeline]
 
@@ -230,27 +230,60 @@ Pozdrowienia,
 Zespół RenoTimeline
 ```
 
-#### 2.3 **Cross-App Notification API - Enhanced**
+**Timeline Alert Template:**
+```html
+📧 [RenoTimeline] ⚠️ Opóźnienie w projekcie "Remont kuchni"
+
+Cześć!
+
+Projekt "Remont kuchni" ma 3-dniowe opóźnienie:
+📅 Planowane zakończenie: 15.03.2024
+📅 Nowe przewidywane zakończenie: 18.03.2024
+
+💡 Wpływ na kosztorys:
+- Dodatkowe 3 dni robocizny ekipy
+- Możliwe dodatkowe koszty wynajmu narzędzi
+- Sprawdź czy klient wymaga rekompensaty
+
+🔗 [Aktualizuj kosztorys w CalcReno] [Zobacz harmonogram w RenoTimeline]
+
+Pozdrowienia,
+Zespół RenoTimeline
+```
+
+#### 2.3 **Notification API (RenoTimeline → CalcReno Only)**
 ```typescript
-interface SmartNotification extends CrossAppNotification {
+interface RenoTimelineNotification {
+  id: string;
+  project_id: string; // RenoTimeline project ID
+  calcreno_project_id: string; // Link to CalcReno project
+  type: 'task_completed' | 'milestone_reached' | 'timeline_delay' | 'budget_timeline_alert' | 'team_update' | 'critical_issue';
+  title: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high';
   suggested_actions: Array<{
     action: string;
-    app: 'calcreno' | 'renotimeline';
-    url: string;
+    description: string;
+    calcreno_url?: string; // Deep link to CalcReno
+    renotimeline_url?: string; // Deep link to RenoTimeline
   }>;
   correlation_data?: {
-    budget_impact?: number;
-    timeline_impact?: string;
-    cost_savings?: number;
+    estimated_cost_impact?: number;
+    timeline_change_days?: number;
+    affected_tasks?: string[];
   };
+  created_at: string;
+  user_id: string;
 }
 ```
 
-#### 2.4 **In-App Notification Center**
-- **Dedicated sections** dla każdej aplikacji
-- **Smart aggregation** - grouped notifications
-- **Action-oriented UI** - clear next steps
-- **Bi-directional deep linking**
+#### 2.4 **CalcReno Notification Center**
+**CalcReno Side (Receiving App):**
+- **RenoTimeline notifications section** - dedicated space for timeline updates
+- **Smart notification filtering** - only show relevant notifications for user's projects
+- **Action-oriented UI** - clear next steps with deep links
+- **Mark as read/handled** - user can mark notifications as processed
+- **Notification history** - keep track of all project updates
 
 ### 📈 Success Metrics:
 - 70%+ notification open rate
@@ -375,25 +408,25 @@ Kompletny ecosystem z zaawansowanymi funkcjami współpracy i analityki.
 ### 💼 User value - immediate benefit dla users  
 ### 🎯 Clear implementation path
 
-## 📊 Główna Integracja: Smart Notifications System
+## 📊 Główna Integracja: Smart Notifications System (RenoTimeline → CalcReno)
 
 ### Concept:
-Aplikacje komunikują się przez inteligentne powiadomienia. a nie przez kompleksową synchronizację danych.
+RenoTimeline wysyła inteligentne powiadomienia do CalcReno o ważnych wydarzeniach w harmonogramie, które mogą wpływać na kosztorys. **Jednokierunkowy przepływ informacji - tylko timeline updates.**
 
 ### Progress Updates:
 - **Project Moment Reached** - zadanie 'wykonanie kończy zostać ukończone'
 - **Budget Alert** - przekroczenie budżetu 50% realizacji, Czas na update kosztorysu w CalcReno  
 - **Milestone Notifications** - faza projektu zakończona/rozpoczęta
 
-### CalcReno → RenoTimeline Notifications:
-**Budget Insights:**
-- "Budżet zostanie złożenety z 13%. Sprawdź aktualizację w harmonogramie" 
-- "Nowy kosztorys zmiało 40% dostępności. Probuemy zaplanowanie ramice"  
-- "Materiały zaawansowane gotowe. Dodatkowe proce skargu w kalendarz?"
+### RenoTimeline → CalcReno Notifications:
+**Timeline Progress:**
+- "Zadanie 'Wymiana instalacji elektrycznej' ukończone! Sprawdź czy czas był zgodny z kalkulacją"
+- "Projekt osiągnął 50% realizacji. Czas na aktualizację kosztorysu?"  
+- "Zespół wyprzedza harmonogram o 2 dni. Możliwe oszczędności na robociźnie!"
 
-**Budget Alerts:**
-- "Dodatkowe nowe zadanie. Wstaw nurt kosztorys w kalendarzu"
-- "Projekty pozatywy o 1 tydzień. Sprawdź wp na otywy kalendarz"
+**Timeline Alerts:**
+- "Opóźnienie 3 dni w projekcie. Sprawdź wpływ na dodatkowe koszty"
+- "Nowy członek zespołu dodany. Aktualizuj koszty robocizny w kalkulatorze"
 
 ### Future AI:
 **AI wysyła puszczalne kosztorys w RenoTimeline, projekt skłoni się na 30% przewyższenia budżetu-**
@@ -409,30 +442,29 @@ Aplikacje komunikują się przez inteligentne powiadomienia. a nie przez komplek
 
 ### Architektura Powiadomień
 
-### Notification Bridge Service
+### Notification Bridge Service (RenoTimeline → CalcReno)
 Jak działa:
-1. **Event Detection** - każda aplikacja wykrywa ważne wydarzenia
-2. **Cross-App Notification API** - wysyła powiadomienie do drugiej aplikacji  
-3. **Smart Filtering** - AI decyduje które wydarzenia są releventne
-4. **Multi-Channel Delivery** - email + in-app notification center
+1. **Event Detection** - RenoTimeline wykrywa ważne wydarzenia w harmonogramie
+2. **Notification API** - wysyła powiadomienie do CalcReno  
+3. **Smart Filtering** - AI decyduje które wydarzenia wpływają na kosztorys
+4. **Multi-Channel Delivery** - email + in-app notification w CalcReno
 
-### Technical Flow:
-**RenoTimeline Side:**
+### Technical Flow (Unidirectional):
+**RenoTimeline Side (Event Source):**
 ```
 📅 Task Completed → Event Trigger →
 Check if project has CalcReno link →
-Generate notification →
-Send to Notification Bridge →
-Deliver to CalcReno user
+Generate cost-relevant notification →
+Send to CalcReno Notification API →
+Deliver to CalcReno user (email + in-app)
 ```
 
-**CalcReno Side:**  
+**CalcReno Side (Notification Receiver):**  
 ```
-💰 Budget Updated → Event Trigger →
-Check if project linked to RenoTimeline →
-Generate notification → 
-Send to Notification Bridge →
-Deliver to RenoTimeline user
+📨 Receive RenoTimeline notification →
+Display in notification center →
+Show relevant actions (update costs, check budget) →
+Optional: Deep link back to RenoTimeline
 ```
 
 ### 🎯 Next Steps - Implementation Roadmap:
@@ -452,11 +484,11 @@ Deliver to RenoTimeline user
 4. **Test basic workflow**: CalcReno project → RenoTimeline creation
 
 ## 📧 **ETAP 2: Smart Notifications (VALUE) - 2-3 tygodnie**
-1. **Implement cross-app notification API** w obu aplikacjach (bidirectional notifications)
-2. **Implement basic event detection** (budget changes w CalcReno, task completion w RenoTimeline)  
-3. **Create email templates** for cross-app notifications
-4. **Setup notification center enhancement** w RenoTimeline
-5. **Test notification flow** end-to-end: events → emails → actions
+1. **Implement notification API** w CalcReno (receives notifications from RenoTimeline)
+2. **Implement event detection w RenoTimeline** (task completion, timeline changes, milestones)  
+3. **Create email templates** for RenoTimeline → CalcReno notifications
+4. **Setup notification center w CalcReno** to display RenoTimeline updates
+5. **Test notification flow** end-to-end: RenoTimeline events → CalcReno notifications → user actions
 
 ## 🤖 **ETAP 3+: AI & Advanced Features**
 - Correlation engine, predictive insights, advanced workflow automation

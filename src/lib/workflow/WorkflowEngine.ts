@@ -1,4 +1,4 @@
-import { supabase } from '../../integrations/supabase/client';
+import { renotimelineClient } from '../../integrations/supabase/client';
 import { VariableSubstitution } from './VariableSubstitution';
 import { EnhancedActionExecutors } from './EnhancedActionExecutors';
 import type {
@@ -45,7 +45,7 @@ export class WorkflowEngine {
     triggerType: WorkflowTriggerType,
     projectId: string
   ): Promise<WorkflowDefinition[]> {
-    const { data, error } = await supabase
+    const { data, error } = await renotimelineClient
       .from('workflow_definitions')
       .select('*')
       .eq('project_id', projectId)
@@ -137,7 +137,7 @@ export class WorkflowEngine {
     // For task-related triggers, get task data to check conditions
     const taskId = this.getTaskIdFromTriggerData(triggerData);
     if (taskId) {
-      const { data: task } = await supabase
+      const { data: task } = await renotimelineClient
         .from('tasks')
         .select('*')
         .eq('id', taskId)
@@ -208,7 +208,7 @@ export class WorkflowEngine {
 
     try {
       // Get workflow definition
-      const { data: workflowData, error: workflowError } = await supabase
+      const { data: workflowData, error: workflowError } = await renotimelineClient
         .from('workflow_definitions')
         .select('*')
         .eq('id', workflowId)
@@ -302,7 +302,7 @@ export class WorkflowEngine {
     if (Object.keys(updateData).length > 0) {
       updateData.updated_at = new Date().toISOString();
 
-      const { error } = await supabase
+      const { error } = await renotimelineClient
         .from('tasks')
         .update(updateData)
         .eq('id', taskId);
@@ -331,7 +331,7 @@ export class WorkflowEngine {
       status: 'todo' as const
     };
 
-    const { error } = await supabase
+    const { error } = await renotimelineClient
       .from('tasks')
       .insert(taskData);
 
@@ -353,7 +353,7 @@ export class WorkflowEngine {
     if (!recipientId) {
       const taskId = this.getTaskIdFromTriggerData(context.trigger_data);
       if (taskId) {
-        const { data: task } = await supabase
+        const { data: task } = await renotimelineClient
           .from('tasks')
           .select('assigned_to')
           .eq('id', taskId)
@@ -384,7 +384,7 @@ export class WorkflowEngine {
       }
     };
 
-    const { data: notification, error } = await supabase
+    const { data: notification, error } = await renotimelineClient
       .from('notifications')
       .insert(notificationData)
       .select()
@@ -433,7 +433,7 @@ export class WorkflowEngine {
       throw new Error('No task ID available for assign_to_user action');
     }
 
-    const { error } = await supabase
+    const { error } = await renotimelineClient
       .from('tasks')
       .update({ 
         assigned_to: action.config.user_id,
@@ -465,7 +465,7 @@ export class WorkflowEngine {
       execution_time: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await renotimelineClient
       .from('workflow_executions')
       .insert(executionData)
       .select()
@@ -516,7 +516,7 @@ export class WorkflowEngine {
         }
       };
 
-      const { data: notification, error } = await supabase
+      const { data: notification, error } = await renotimelineClient
         .from('notifications')
         .insert(notificationData)
         .select()
@@ -588,7 +588,7 @@ export class WorkflowEngine {
     workflowId?: string,
     limit: number = 50
   ): Promise<WorkflowExecution[]> {
-    let query = supabase
+    let query = renotimelineClient
       .from('workflow_executions')
       .select('*')
       .order('execution_time', { ascending: false })
@@ -636,7 +636,7 @@ export class WorkflowEngine {
       throw new Error('No task ID available for move_to_project action');
     }
 
-    const { error } = await supabase
+    const { error } = await renotimelineClient
       .from('tasks')
       .update({ 
         project_id: action.config.target_project_id,
@@ -661,7 +661,7 @@ export class WorkflowEngine {
       throw new Error('No project ID available for update_project_status action');
     }
 
-    const { error } = await supabase
+    const { error } = await renotimelineClient
       .from('projects')
       .update({ 
         status: action.config.status,

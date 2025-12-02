@@ -70,52 +70,72 @@ export function AddTeamMemberDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg">
           <UserPlus className="mr-2 h-4 w-4" />
-          Add Member
+          Dodaj członka
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Team Member</DialogTitle>
-          <DialogDescription>
-            Enter the details of the new team member.
+          <DialogTitle className="text-white">Dodaj członka zespołu</DialogTitle>
+          <DialogDescription className="text-white/60">
+            Wprowadź dane nowego członka zespołu.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="grid gap-2">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="first_name" className="text-right">
-                First Name
+              <Label htmlFor="first_name" className="text-right text-white/80">
+                Imię
               </Label>
-              <Input id="first_name" {...register('first_name')} className="col-span-3" />
-              {errors.first_name && <p className="col-span-4 text-red-500 text-xs">{errors.first_name.message}</p>}
+              <Input 
+                id="first_name" 
+                {...register('first_name')} 
+                className="col-span-3 bg-white/5 border border-white/10 text-white placeholder:text-white/50 focus:bg-white/10 focus:border-white/30" 
+              />
+              {errors.first_name && <p className="col-span-4 text-red-400 text-xs">{errors.first_name.message}</p>}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="last_name" className="text-right">
-                Last Name
+              <Label htmlFor="last_name" className="text-right text-white/80">
+                Nazwisko
               </Label>
-              <Input id="last_name" {...register('last_name')} className="col-span-3" />
-              {errors.last_name && <p className="col-span-4 text-red-500 text-xs">{errors.last_name.message}</p>}
+              <Input 
+                id="last_name" 
+                {...register('last_name')} 
+                className="col-span-3 bg-white/5 border border-white/10 text-white placeholder:text-white/50 focus:bg-white/10 focus:border-white/30" 
+              />
+              {errors.last_name && <p className="col-span-4 text-red-400 text-xs">{errors.last_name.message}</p>}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expertise" className="text-right">
-                Expertise
+              <Label htmlFor="expertise" className="text-right text-white/80">
+                Specjalizacja
               </Label>
-              <Input id="expertise" {...register('expertise')} className="col-span-3" />
-              {errors.expertise && <p className="col-span-4 text-red-500 text-xs">{errors.expertise.message}</p>}
+              <Input 
+                id="expertise" 
+                {...register('expertise')} 
+                className="col-span-3 bg-white/5 border border-white/10 text-white placeholder:text-white/50 focus:bg-white/10 focus:border-white/30" 
+              />
+              {errors.expertise && <p className="col-span-4 text-red-400 text-xs">{errors.expertise.message}</p>}
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email (Optional)
+              <Label htmlFor="email" className="text-right text-white/80">
+                Email (Opcjonalny)
               </Label>
-              <Input id="email" {...register('email')} className="col-span-3" />
-              {errors.email && <p className="col-span-4 text-red-500 text-xs">{errors.email.message}</p>}
+              <Input 
+                id="email" 
+                {...register('email')} 
+                className="col-span-3 bg-white/5 border border-white/10 text-white placeholder:text-white/50 focus:bg-white/10 focus:border-white/30" 
+              />
+              {errors.email && <p className="col-span-4 text-red-400 text-xs">{errors.email.message}</p>}
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={isAdding}>
-              {isAdding ? 'Adding...' : 'Add Member'}
+            <Button 
+              type="submit" 
+              disabled={isAdding}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+            >
+              {isAdding ? 'Dodawanie...' : 'Dodaj członka'}
             </Button>
           </DialogFooter>
         </form>

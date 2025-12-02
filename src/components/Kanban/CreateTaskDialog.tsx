@@ -1,231 +1,291 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useTasks } from '@/hooks/useTasks';
+import { useProjects } from '@/hooks/useProjects';
 import { toast } from 'sonner';
-import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
-import { supabase } from '../../integrations/supabase/client';
-
-interface Project {
-  id: string;
-  name: string;
-}
+import { Calendar, Clock, FileText, Target, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Task } from '@/hooks/useTasks';
 
 interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projects: Project[];
+  projects: any[];
+  defaultStatus?: Task['status'];
 }
 
-const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange, projects }) => {
+const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange, projects, defaultStatus }) => {
+  const { createTask } = useTasks();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
     project_id: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
-    status: 'todo' as 'todo' | 'in_progress' | 'review' | 'done',
-    due_date: '',
-    estimated_hours: ''
+    priority: 2, // Default to Medium
+    status: defaultStatus || 'pending' as Task['status'],
+    end_date: '', // Was due_date
+    estimated_duration_days: ''
   });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createTask } = useTasks();
+
+  React.useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        status: defaultStatus || 'pending'
+      }));
+    }
+  }, [open, defaultStatus]);
+
+  const priorityOptions = [
+    { value: 1, label: 'Niski', icon: CheckCircle, color: 'text-green-400' },
+    { value: 2, label: 'Średni', icon: Target, color: 'text-blue-400' },
+    { value: 3, label: 'Wysoki', icon: AlertTriangle, color: 'text-orange-400' },
+    { value: 4, label: 'Pilny', icon: AlertTriangle, color: 'text-red-400' }
+  ];
+
+  const statusOptions = [
+    { value: 'pending', label: 'Oczekujące', color: 'text-gray-400' },
+    { value: 'in_progress', label: 'W toku', color: 'text-blue-400' },
+    { value: 'completed', label: 'Ukończone', color: 'text-green-400' },
+    { value: 'blocked', label: 'Zablokowane', color: 'text-red-400' }
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim()) {
-      toast.error('Tytuł zadania jest wymagany');
+    if (!formData.name.trim()) {
+      toast.error('Nazwa zadania jest wymagana');
       return;
     }
-
     if (!formData.project_id) {
-      toast.error('Wybierz projekt');
+      toast.error('Wybór projektu jest wymagany');
       return;
     }
 
-    setIsSubmitting(true);
-    
+    setLoading(true);
     try {
-      const taskData = {
-        title: formData.title.trim(),
-        description: formData.description.trim() || undefined,
+      await createTask({
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
         project_id: formData.project_id,
         priority: formData.priority,
         status: formData.status,
-        due_date: formData.due_date || undefined,
-        estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-        assigned_to: undefined,
-        start_date: undefined,
-        start_time: undefined,
-        end_time: undefined,
-        is_all_day: true,
-      };
-
-      const newTask = await createTask(taskData);
-      
-      // Trigger workflow for task creation
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && newTask?.id) {
-          await WorkflowTriggers.onTaskCreated(
-            newTask.id,
-            formData.project_id,
-            user.id,
-            taskData.assigned_to
-          );
-        }
-      } catch (error) {
-        console.error('Error triggering task creation workflow:', error);
-      }
-      
-      toast.success('Zadanie zostało utworzone pomyślnie!');
-      
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        project_id: '',
-        priority: 'medium',
-        status: 'todo',
-        due_date: '',
-        estimated_hours: ''
+        end_date: formData.end_date || null,
+        estimated_duration_days: formData.estimated_duration_days ? parseFloat(formData.estimated_duration_days) : null,
+        assigned_to: null,
+        start_date: null,
       });
       
+      toast.success('Zadanie zostało utworzone pomyślnie!');
       onOpenChange(false);
+      setFormData({
+        name: '',
+        description: '',
+        project_id: '',
+        priority: 2,
+        status: 'pending',
+        end_date: '',
+        estimated_duration_days: ''
+      });
     } catch (error) {
-      console.error('Error creating task:', error);
       toast.error('Nie udało się utworzyć zadania');
+      console.error('Error creating task:', error);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Nowe zadanie</DialogTitle>
-          <DialogDescription>
-            Utwórz nowe zadanie w projekcie
-          </DialogDescription>
+      <DialogContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl border border-green-500/30">
+              <Target className="h-6 w-6 text-green-400" />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl font-bold text-white">Nowe zadanie</DialogTitle>
+              <DialogDescription className="text-white/60 text-base">
+                Utwórz nowe zadanie w projekcie
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Tytuł zadania *</Label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Task Name */}
+          <div className="space-y-3">
+            <Label htmlFor="name" className="text-white/80 font-medium flex items-center space-x-2">
+              <FileText className="h-4 w-4 text-blue-400" />
+              <span>Nazwa zadania *</span>
+            </Label>
             <Input
-              id="title"
-              placeholder="np. Zdemontować starą armaturę"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
+              id="name"
+              placeholder="np. Zdemontować starą armaturę, Przygotować podłoże..."
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="project_id">Projekt *</Label>
-            <Select value={formData.project_id} onValueChange={(value) => handleInputChange('project_id', value)}>
-              <SelectTrigger>
+          {/* Project Selection */}
+          <div className="space-y-3">
+            <Label htmlFor="project" className="text-white/80 font-medium flex items-center space-x-2">
+              <User className="h-4 w-4 text-purple-400" />
+              <span>Projekt *</span>
+            </Label>
+            <Select
+              value={formData.project_id}
+              onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+            >
+              <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12">
                 <SelectValue placeholder="Wybierz projekt" />
               </SelectTrigger>
-              <SelectContent>
-                {projects.map(project => (
-                  <SelectItem key={project.id} value={project.id}>
+              <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id} className="text-white hover:bg-white/20">
                     {project.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Opis</Label>
+
+          {/* Task Description */}
+          <div className="space-y-3">
+            <Label htmlFor="description" className="text-white/80 font-medium">
+              Opis zadania
+            </Label>
             <Textarea
               id="description"
-              placeholder="Opisz zadanie..."
+              placeholder="Szczegółowy opis zadania, wymagania, uwagi..."
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={3}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl min-h-[100px] resize-none"
+              rows={4}
             />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priorytet</Label>
-              <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                <SelectTrigger>
+
+          {/* Priority and Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label className="text-white/80 font-medium flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-orange-400" />
+                <span>Priorytet</span>
+              </Label>
+              <Select
+                value={String(formData.priority)}
+                onValueChange={(value: string) => 
+                  setFormData({ ...formData, priority: parseInt(value, 10) })
+                }
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Niski</SelectItem>
-                  <SelectItem value="medium">Średni</SelectItem>
-                  <SelectItem value="high">Wysoki</SelectItem>
-                  <SelectItem value="urgent">Pilny</SelectItem>
+                <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
+                  {priorityOptions.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)} className="text-white hover:bg-white/20">
+                      <div className="flex items-center space-x-2">
+                        <option.icon className={`h-4 w-4 ${option.color}`} />
+                        <span>{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                <SelectTrigger>
+            <div className="space-y-3">
+              <Label className="text-white/80 font-medium flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span>Status</span>
+              </Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: Task['status']) => 
+                  setFormData({ ...formData, status: value })
+                }
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">Do zrobienia</SelectItem>
-                  <SelectItem value="in_progress">W toku</SelectItem>
-                  <SelectItem value="review">Do przeglądu</SelectItem>
-                  <SelectItem value="done">Ukończone</SelectItem>
+                <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="text-white hover:bg-white/20">
+                      <span className={option.color}>{option.label}</span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="due_date">Termin wykonania</Label>
+
+          {/* Due Date and Estimated Hours */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label htmlFor="end_date" className="text-white/80 font-medium flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-red-400" />
+                <span>Termin wykonania</span>
+              </Label>
               <Input
-                id="due_date"
+                id="end_date"
                 type="date"
-                value={formData.due_date}
-                onChange={(e) => handleInputChange('due_date', e.target.value)}
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="estimated_hours">Szacowane godziny</Label>
+            <div className="space-y-3">
+              <Label htmlFor="estimated_duration_days" className="text-white/80 font-medium flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-yellow-400" />
+                <span>Szacowana liczba dni</span>
+              </Label>
               <Input
-                id="estimated_hours"
+                id="estimated_duration_days"
                 type="number"
                 placeholder="0"
-                value={formData.estimated_hours}
-                onChange={(e) => handleInputChange('estimated_hours', e.target.value)}
+                value={formData.estimated_duration_days}
+                onChange={(e) => setFormData({ ...formData, estimated_duration_days: e.target.value })}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
                 min="0"
+                step="1"
               />
             </div>
           </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/30 rounded-xl px-6 py-3 transition-all duration-300"
+            >
               Anuluj
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Tworzenie...' : 'Utwórz zadanie'}
+            <Button
+              type="submit"
+              disabled={loading || !formData.name.trim() || !formData.project_id}
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Tworzenie...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>Utwórz zadanie</span>
+                </div>
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

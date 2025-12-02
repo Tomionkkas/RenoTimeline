@@ -12,7 +12,8 @@ import {
   Settings,
   ArrowRight,
   Clock,
-  Target
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks } from '@/hooks/useTasks';
@@ -49,10 +50,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Nowe zadanie',
       description: 'Szybko dodaj zadanie do projektu',
       icon: Plus,
-      color: 'bg-blue-600',
-      hoverColor: 'hover:bg-blue-700',
-      textColor: 'text-blue-100',
-      bgGradient: 'from-blue-900/20 to-blue-800/10',
+      color: 'bg-blue-500',
+      hoverColor: 'hover:bg-blue-600',
       borderColor: 'border-blue-500/30',
       action: () => onCreateTask?.(),
       badge: null
@@ -62,10 +61,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Kalendarz',
       description: 'Sprawdź harmonogram i terminy',
       icon: Calendar,
-      color: 'bg-purple-600',
-      hoverColor: 'hover:bg-purple-700',
-      textColor: 'text-purple-100',
-      bgGradient: 'from-purple-900/20 to-purple-800/10',
+      color: 'bg-purple-500',
+      hoverColor: 'hover:bg-purple-600',
       borderColor: 'border-purple-500/30',
       action: () => navigate('/', { state: { tab: 'calendar' } }),
       badge: todayTasks > 0 ? `${todayTasks} dzisiaj` : null
@@ -75,11 +72,9 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Nowy projekt',
       description: 'Rozpocznij nowy projekt remontowy',
       icon: Target,
-      color: 'bg-green-600',
-      hoverColor: 'hover:bg-green-700',
-      textColor: 'text-green-100',
-      bgGradient: 'from-green-900/20 to-green-800/10',
-      borderColor: 'border-green-500/30',
+      color: 'bg-emerald-500',
+      hoverColor: 'hover:bg-emerald-600',
+      borderColor: 'border-emerald-500/30',
       action: () => onCreateProject?.(),
       badge: null
     },
@@ -88,11 +83,9 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Raporty',
       description: 'Analizuj postęp projektów',
       icon: BarChart3,
-      color: 'bg-orange-600',
-      hoverColor: 'hover:bg-orange-700',
-      textColor: 'text-orange-100',
-      bgGradient: 'from-orange-900/20 to-orange-800/10',
-      borderColor: 'border-orange-500/30',
+      color: 'bg-amber-500',
+      hoverColor: 'hover:bg-amber-600',
+      borderColor: 'border-amber-500/30',
       action: () => navigate('/', { state: { tab: 'reports' } }),
       badge: `${activeProjects} aktywne`
     },
@@ -101,10 +94,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Zespół',
       description: 'Zarządzaj członkami zespołu',
       icon: Users,
-      color: 'bg-cyan-600',
-      hoverColor: 'hover:bg-cyan-700',
-      textColor: 'text-cyan-100',
-      bgGradient: 'from-cyan-900/20 to-cyan-800/10',
+      color: 'bg-cyan-500',
+      hoverColor: 'hover:bg-cyan-600',
       borderColor: 'border-cyan-500/30',
       action: () => navigate('/', { state: { tab: 'team' } }),
       badge: null
@@ -114,11 +105,9 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       title: 'Automatyzacje',
       description: 'Skonfiguruj przepływy pracy',
       icon: Zap,
-      color: 'bg-yellow-600',
-      hoverColor: 'hover:bg-yellow-700',
-      textColor: 'text-yellow-100',
-      bgGradient: 'from-yellow-900/20 to-yellow-800/10',
-      borderColor: 'border-yellow-500/30',
+      color: 'bg-orange-500',
+      hoverColor: 'hover:bg-orange-600',
+      borderColor: 'border-orange-500/30',
       action: () => navigate('/', { state: { tab: 'kanban' } }), // Workflows are in kanban for now
       badge: 'Nowe!'
     }
@@ -129,7 +118,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
       id: 'overdue-tasks',
       title: 'Zaległe zadania',
       description: `${overdueTasks} zadań po terminie`,
-      icon: Clock,
+      icon: AlertTriangle,
       urgent: true,
       action: () => navigate('/', { state: { tab: 'kanban' } })
     }] : []),
@@ -144,49 +133,51 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
   ];
 
   return (
-    <Card className="bg-card rounded-xl border border-gray-800 card-hover">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
-          <Zap className="w-5 h-5 text-blue-400" />
+    <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+      <CardHeader className="pb-6">
+        <CardTitle className="text-xl font-semibold text-white flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
+            <Zap className="w-5 h-5 text-blue-400" />
+          </div>
           Szybkie akcje
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {/* Urgent Actions */}
         {urgentActions.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-white/80 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-red-400" />
               Wymagają uwagi
             </h3>
             {urgentActions.map((action) => (
               <div
                 key={action.id}
                 onClick={action.action}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                className={`group relative p-4 rounded-lg cursor-pointer transition-all duration-300 backdrop-blur-sm border ${
                   action.urgent 
-                    ? 'bg-red-900/20 border border-red-500/30 hover:bg-red-900/30' 
-                    : 'bg-yellow-900/20 border border-yellow-500/30 hover:bg-yellow-900/30'
-                }`}
+                    ? 'bg-red-500/10 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/20 animate-pulse-slow' 
+                    : 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/20'
+                } hover:scale-105`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      action.urgent ? 'bg-red-600/20' : 'bg-yellow-600/20'
+                    <div className={`p-2 rounded-lg backdrop-blur-sm ${
+                      action.urgent ? 'bg-red-500/20 border border-red-500/40' : 'bg-amber-500/20 border border-amber-500/40'
                     }`}>
                       <action.icon className={`w-4 h-4 ${
-                        action.urgent ? 'text-red-400' : 'text-yellow-400'
+                        action.urgent ? 'text-red-300' : 'text-amber-300'
                       }`} />
                     </div>
                     <div>
-                      <p className="text-white font-medium text-sm">{action.title}</p>
+                      <p className="text-white font-semibold text-sm">{action.title}</p>
                       <p className={`text-xs ${
-                        action.urgent ? 'text-red-300' : 'text-yellow-300'
+                        action.urgent ? 'text-red-200' : 'text-amber-200'
                       }`}>{action.description}</p>
                     </div>
                   </div>
-                  <ArrowRight className={`w-4 h-4 ${
-                    action.urgent ? 'text-red-400' : 'text-yellow-400'
+                  <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${
+                    action.urgent ? 'text-red-300' : 'text-amber-300'
                   }`} />
                 </div>
               </div>
@@ -195,9 +186,9 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
         )}
 
         {/* Quick Actions Grid */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-300">Często używane</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-white/80">Często używane</h3>
+          <div className="grid grid-cols-2 gap-4">
             {quickActions.slice(0, 4).map((action) => {
               const Icon = action.icon;
               const isHovered = hoveredAction === action.id;
@@ -208,17 +199,20 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
                   onClick={action.action}
                   onMouseEnter={() => setHoveredAction(action.id)}
                   onMouseLeave={() => setHoveredAction(null)}
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 bg-gradient-to-br ${action.bgGradient} border ${action.borderColor} hover:border-opacity-60 transform hover:scale-105`}
+                  className={`group relative p-4 rounded-lg cursor-pointer transition-all duration-300 bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 hover:scale-105 overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center text-center space-y-2">
+                  {/* Subtle background overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <div className="relative z-10 flex flex-col items-center text-center space-y-3">
                     <div className={`p-3 rounded-lg ${action.color} ${action.hoverColor} transition-colors`}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-medium text-sm">{action.title}</p>
-                      <p className="text-gray-400 text-xs">{action.description}</p>
+                      <p className="text-white font-semibold text-sm">{action.title}</p>
+                      <p className="text-white/80 text-xs mt-1">{action.description}</p>
                       {action.badge && (
-                        <Badge variant="outline" className="mt-1 text-xs bg-gray-800/50 text-gray-300 border-gray-600">
+                        <Badge className="mt-2 text-xs bg-white/20 text-white border-white/30 backdrop-blur-sm">
                           {action.badge}
                         </Badge>
                       )}
@@ -231,9 +225,9 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
         </div>
 
         {/* Additional Actions */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-300">Więcej opcji</h3>
-          <div className="space-y-2">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-white/80">Więcej opcji</h3>
+          <div className="space-y-3">
             {quickActions.slice(4).map((action) => {
               const Icon = action.icon;
               
@@ -241,25 +235,25 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
                 <div
                   key={action.id}
                   onClick={action.action}
-                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 bg-gradient-to-r ${action.bgGradient} border ${action.borderColor} hover:border-opacity-60`}
+                  className={`group relative p-4 rounded-lg cursor-pointer transition-all duration-300 bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 hover:scale-105`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${action.color}`}>
+                      <div className={`p-2 rounded-lg ${action.color} ${action.hoverColor} transition-colors`}>
                         <Icon className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm">{action.title}</p>
-                        <p className="text-gray-400 text-xs">{action.description}</p>
+                        <p className="text-white font-semibold text-sm">{action.title}</p>
+                        <p className="text-white/80 text-xs">{action.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {action.badge && (
-                        <Badge variant="outline" className="text-xs bg-gray-800/50 text-gray-300 border-gray-600">
+                        <Badge className="text-xs bg-white/20 text-white border-white/30 backdrop-blur-sm">
                           {action.badge}
                         </Badge>
                       )}
-                      <ArrowRight className="w-4 h-4 text-gray-400" />
+                      <ArrowRight className="w-4 h-4 text-white/60 group-hover:text-white transition-colors group-hover:translate-x-1" />
                     </div>
                   </div>
                 </div>
@@ -269,12 +263,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
         </div>
 
         {/* Settings Link */}
-        <div className="pt-2 border-t border-gray-800">
+        <div className="pt-4 border-t border-white/10">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/', { state: { tab: 'settings' } })}
-            className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800/50"
+            className="w-full justify-start text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
           >
             <Settings className="w-4 h-4 mr-2" />
             Ustawienia aplikacji

@@ -84,7 +84,7 @@ const CalcRenoNotificationCard: React.FC<CalcRenoNotificationCardProps> = ({
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                  📊 CalcReno
+                  CalcReno
                 </Badge>
                 <Badge variant="outline" className={`text-xs ${getPriorityColor()}`}>
                   {notification.priority}

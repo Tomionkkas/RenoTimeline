@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
+import { User, Mail, Briefcase, Edit3 } from 'lucide-react';
 
 const editMemberSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -77,47 +78,120 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Team Member</DialogTitle>
-          <DialogDescription>
-            Update the details of the team member.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="first_name" className="text-right">
-                First Name
-              </Label>
-              <Input id="first_name" {...register('first_name')} className="col-span-3" />
-              {errors.first_name && <p className="col-span-4 text-red-500 text-xs">{errors.first_name.message}</p>}
+      <DialogContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl max-w-md">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+              <Edit3 className="w-6 h-6 text-purple-400" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="last_name" className="text-right">
-                Last Name
-              </Label>
-              <Input id="last_name" {...register('last_name')} className="col-span-3" />
-              {errors.last_name && <p className="col-span-4 text-red-500 text-xs">{errors.last_name.message}</p>}
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expertise" className="text-right">
-                Expertise
-              </Label>
-              <Input id="expertise" {...register('expertise')} className="col-span-3" />
-              {errors.expertise && <p className="col-span-4 text-red-500 text-xs">{errors.expertise.message}</p>}
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email (Optional)
-              </Label>
-              <Input id="email" {...register('email')} className="col-span-3" />
-              {errors.email && <p className="col-span-4 text-red-500 text-xs">{errors.email.message}</p>}
+            <div>
+              <DialogTitle className="text-2xl font-bold text-white">Edit Team Member</DialogTitle>
+              <DialogDescription className="text-white/60 text-base">
+                Update the details of the team member.
+              </DialogDescription>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isUpdating}>
-              {isUpdating ? 'Saving...' : 'Save Changes'}
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* First Name */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4 text-blue-400" />
+              <Label htmlFor="first_name" className="text-white font-medium">
+                First Name
+              </Label>
+            </div>
+            <Input 
+              id="first_name" 
+              {...register('first_name')} 
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl"
+            />
+            {errors.first_name && (
+              <p className="text-red-400 text-xs flex items-center space-x-1">
+                <span>⚠</span>
+                <span>{errors.first_name.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Last Name */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4 text-blue-400" />
+              <Label htmlFor="last_name" className="text-white font-medium">
+                Last Name
+              </Label>
+            </div>
+            <Input 
+              id="last_name" 
+              {...register('last_name')} 
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl"
+            />
+            {errors.last_name && (
+              <p className="text-red-400 text-xs flex items-center space-x-1">
+                <span>⚠</span>
+                <span>{errors.last_name.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Expertise */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Briefcase className="w-4 h-4 text-emerald-400" />
+              <Label htmlFor="expertise" className="text-white font-medium">
+                Expertise
+              </Label>
+            </div>
+            <Input 
+              id="expertise" 
+              {...register('expertise')} 
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl"
+            />
+            {errors.expertise && (
+              <p className="text-red-400 text-xs flex items-center space-x-1">
+                <span>⚠</span>
+                <span>{errors.expertise.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Mail className="w-4 h-4 text-purple-400" />
+              <Label htmlFor="email" className="text-white font-medium">
+                Email (Optional)
+              </Label>
+            </div>
+            <Input 
+              id="email" 
+              {...register('email')} 
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl"
+            />
+            {errors.email && (
+              <p className="text-red-400 text-xs flex items-center space-x-1">
+                <span>⚠</span>
+                <span>{errors.email.message}</span>
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="pt-6 border-t border-white/10">
+            <Button 
+              type="submit" 
+              disabled={isUpdating}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-purple-500/25 transition-all duration-300 w-full"
+            >
+              {isUpdating ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </form>

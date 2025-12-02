@@ -36,9 +36,6 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
   const [showExecutions, setShowExecutions] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('workflows');
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [devMode, setDevMode] = useState(isDevelopmentMode());
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -52,8 +49,8 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
 
   // Conditional debug logging - only in dev mode
   React.useEffect(() => {
-    workflowDebugLog('🎯 WorkflowManager - Workflows updated:', workflows.length, 'workflows');
-    workflowDebugLog('🎯 WorkflowManager - Workflow list:', workflows.map(w => ({ id: w.id, name: w.name })));
+    workflowDebugLog('WorkflowManager - Workflows updated:', workflows.length, 'workflows');
+    workflowDebugLog('WorkflowManager - Workflow list:', workflows.map(w => ({ id: w.id, name: w.name })));
   }, [workflows]);
 
   // Check if user should see onboarding
@@ -123,13 +120,13 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
   };
 
   const handleBuilderClose = () => {
-    workflowDebugLog('🎯 Builder closing, forcing workflow refresh...');
+    workflowDebugLog('Builder closing, forcing workflow refresh...');
     setShowBuilder(false);
     setEditingWorkflow(null);
     
     // Force refresh when builder closes to ensure we have latest data
     setTimeout(() => {
-      workflowDebugLog('🎯 Forcing workflow list refresh after builder close');
+      workflowDebugLog('Forcing workflow list refresh after builder close');
       refetch();
     }, 100);
   };
@@ -140,139 +137,7 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
   };
 
   // Debug functions - only available in dev mode
-  const handleDebugCheck = async () => {
-    if (!devMode) return;
-    
-    try {
-      let systemStatus;
-      try {
-        systemStatus = getWorkflowSystemStatus();
-      } catch (error) {
-        workflowDebugError('🚨 [WORKFLOW-MANAGER] Error getting system status:', error);
-        systemStatus = { 
-          error: 'WorkflowSystemInitializer not initialized',
-          initialized: false 
-        };
-      }
-      
-      const eventBusHandlers = WorkflowEventBus.getRegisteredEvents();
-      
-      let queueStatus;
-      try {
-        queueStatus = AutoWorkflowManager.getQueueStatus();
-      } catch (error) {
-        console.error('🚨 [WORKFLOW-MANAGER] Error getting queue status:', error);
-        queueStatus = { 
-          error: 'AutoWorkflowManager not initialized',
-          queueLength: 0,
-          processing: 0 
-        };
-      }
-      
-      const debug = {
-        systemStatus,
-        eventBusHandlers,
-        queueStatus,
-        currentWorkflows: workflows.length,
-        timestamp: new Date().toISOString()
-      };
-      
-      setDebugInfo(debug);
-      setShowDebugPanel(true);
-      
-      console.log('🐛 [WORKFLOW-MANAGER] Debug info:', debug);
-    } catch (error) {
-      console.error('🚨 [WORKFLOW-MANAGER] Critical error getting debug info:', error);
-    }
-  };
 
-  const handleTestEvent = async () => {
-    if (!devMode) return;
-    
-    try {
-      console.log('🧪 [WORKFLOW-MANAGER] Testing task status changed event...');
-      
-      await WorkflowEventBus.emit('task_status_changed', {
-        type: 'task_status_changed',
-        task_id: 'test-task-123',
-        project_id: projectId,
-        from_status: 'todo',
-        to_status: 'in_progress',
-        user_id: 'test-user-123',
-        timestamp: new Date().toISOString()
-      });
-      
-      console.log('✅ [WORKFLOW-MANAGER] Test event emitted successfully');
-    } catch (error) {
-      console.error('❌ [WORKFLOW-MANAGER] Test event failed:', error);
-    }
-  };
-
-  const handleForceInit = async () => {
-    if (!devMode) return;
-    
-    try {
-      console.log('🔧 [WORKFLOW-MANAGER] Force initializing workflow system...');
-      await initializeWorkflowSystem();
-      console.log('✅ [WORKFLOW-MANAGER] Force initialization completed');
-      
-      // Refresh debug info after initialization
-      setTimeout(() => {
-        handleDebugCheck();
-      }, 500);
-    } catch (error) {
-      console.error('❌ [WORKFLOW-MANAGER] Force initialization failed:', error);
-    }
-  };
-
-  const handleTestNotification = async () => {
-    if (!devMode) return;
-    
-    try {
-      console.log('🧪 [WORKFLOW-MANAGER] Creating test workflow notification...');
-      const { supabase } = await import('../../integrations/supabase');
-      
-      // Get current user ID (simplified approach)
-      const testNotification = {
-        user_id: '12345678-1234-1234-1234-123456789012', // This would be replaced with actual user ID
-        project_id: projectId,
-        type: 'automated_action',
-        title: 'Test Workflow Notification',
-        message: 'This is a test notification to verify the workflow notification system is working.',
-        priority: 'medium',
-        workflow_id: 'test-workflow-id',
-        metadata: {
-          workflow_name: 'Test Workflow',
-          action_type: 'send_notification',
-          triggered_by: 'manual_test'
-        }
-      };
-
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .insert(testNotification);
-
-      if (error) {
-        console.error('❌ [WORKFLOW-MANAGER] Failed to create test notification:', error);
-      } else {
-        console.log('✅ [WORKFLOW-MANAGER] Test notification created successfully');
-      }
-      
-    } catch (error) {
-      console.error('❌ [WORKFLOW-MANAGER] Test notification failed:', error);
-    }
-  };
-
-  const toggleDevMode = () => {
-    const newDevMode = !devMode;
-    setDevMode(newDevMode);
-    localStorage.setItem('workflow_dev_mode', newDevMode.toString());
-    if (newDevMode) {
-      console.log('🔧 Workflow development mode enabled');
-    } else {
-      console.log('🔧 Workflow development mode disabled');
-    }
-  };
 
   const handleShowOnboarding = () => {
     setShowOnboarding(true);
@@ -339,7 +204,7 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
             <div className="p-4 bg-red-800/30 rounded-full mb-4 mx-auto w-fit">
               <Zap className="w-8 h-8 text-red-400" />
             </div>
-            <p className="text-red-100 font-medium mb-4">❌ Błąd ładowania workflow</p>
+            <p className="text-red-100 font-medium mb-4">Błąd ładowania workflow</p>
             <p className="text-red-300/70 text-sm">{error}</p>
           </CardContent>
         </Card>
@@ -353,15 +218,7 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
       <div className="flex items-center justify-between animate-slideUp">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            ⚡ Przepływy pracy
-            {/* Hidden dev mode toggle - double-click to access */}
-            <span 
-              className="ml-2 opacity-0 hover:opacity-30 cursor-pointer select-none text-xs"
-              onDoubleClick={toggleDevMode}
-              title="Double-click to toggle development mode"
-            >
-              DEV
-            </span>
+            Przepływy pracy
           </h2>
           <p className="text-gray-300 text-lg">
             Automatyzuj powtarzające się zadania i zwiększ efektywność zespołu
@@ -374,24 +231,6 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
           </p>
         </div>
         <div className="flex gap-3">
-          {/* Dev mode debug controls - only visible in dev mode */}
-          {devMode && (
-            <div className="flex gap-2 mr-3">
-              <Button variant="outline" size="sm" onClick={handleDebugCheck} className="border-orange-500/30 text-orange-300 hover:bg-orange-900/20">
-                <Bug className="h-4 w-4 mr-2" />
-                Debug
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleTestEvent} className="border-blue-500/30 text-blue-300 hover:bg-blue-900/20">
-                Test Event
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleForceInit} className="border-purple-500/30 text-purple-300 hover:bg-purple-900/20">
-                Force Init
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleTestNotification} className="border-green-500/30 text-green-300 hover:bg-green-900/20">
-                Test Notification
-              </Button>
-            </div>
-          )}
           <Button 
             variant="outline" 
             onClick={handleShowOnboarding}
@@ -452,7 +291,7 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
                   <div className="p-6 bg-blue-800/30 rounded-full mb-6 mx-auto w-fit">
                     <Activity className="h-16 w-16 text-blue-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">🚀 Brak przepływów pracy</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4">Brak przepływów pracy</h3>
                   <p className="text-gray-300 mb-8 text-lg max-w-md mx-auto">
                     Zacznij od utworzenia pierwszego przepływu aby zautomatyzować powtarzające się zadania.
                   </p>
@@ -620,58 +459,7 @@ export function WorkflowManager({ projectId }: WorkflowManagerProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Enhanced Debug Panel - only visible in dev mode */}
-      {showDebugPanel && devMode && (
-        <Card className="bg-gradient-to-br from-orange-900/20 to-yellow-900/20 border-orange-500/30 shadow-xl animate-slideUp">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-800/30 rounded-lg border border-orange-600/30">
-                  <Bug className="w-5 h-5 text-orange-400" />
-                </div>
-                <CardTitle className="text-orange-100">🐛 Workflow Debug Panel</CardTitle>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowDebugPanel(false)}
-                className="border-orange-500/30 text-orange-300 hover:bg-orange-900/20"
-              >
-                Zamknij
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm mb-2 text-orange-200">System Status:</h4>
-                <pre className="bg-gray-900/50 p-4 rounded-lg text-xs text-gray-300 overflow-auto border border-gray-700">
-                  {JSON.stringify(debugInfo?.systemStatus, null, 2)}
-                </pre>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm mb-2 text-orange-200">Event Bus Handlers:</h4>
-                <pre className="bg-gray-900/50 p-4 rounded-lg text-xs text-gray-300 overflow-auto border border-gray-700">
-                  {JSON.stringify(debugInfo?.eventBusHandlers, null, 2)}
-                </pre>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm mb-2 text-orange-200">Queue Status:</h4>
-                <pre className="bg-gray-900/50 p-4 rounded-lg text-xs text-gray-300 overflow-auto border border-gray-700">
-                  {JSON.stringify(debugInfo?.queueStatus, null, 2)}
-                </pre>
-              </div>
 
-              <div>
-                <h4 className="font-semibold text-sm mb-2 text-orange-200">Current Workflows:</h4>
-                <p className="text-orange-100">Znalezione przepływy: {debugInfo?.currentWorkflows || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Workflow Onboarding */}
       {showOnboarding && (

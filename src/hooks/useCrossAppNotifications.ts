@@ -1,51 +1,40 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { sharedClient, renotimelineClient } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
-interface CrossAppNotification {
+export interface CrossAppNotification {
   id: string;
-  project_id: string;
-  calcreno_project_id: string;
-  source_app: 'calcreno' | 'renotimeline';
-  type: 'budget_updated' | 'cost_alert' | 'project_milestone' | 'material_price_change' | 'task_completed';
+  user_id: string;
+  from_app: string;
+  to_app: string;
+  notification_type: string;
   title: string;
   message: string;
-  priority: 'low' | 'medium' | 'high';
   data?: any;
-  calcreno_reference_url?: string;
+  is_read: boolean;
   created_at: string;
-  read: boolean;
-  user_id: string;
 }
 
 export const useCrossAppNotifications = () => {
   const [notifications, setNotifications] = useState<CrossAppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Create cross-app notifications table if it doesn't exist
-  const initializeNotificationsTable = async () => {
-    const { error } = await supabase.from('cross_app_notifications').select('id').limit(1);
-    if (error && error.code === '42P01') {
-      // Table doesn't exist, we'll need to create it via migration
-      console.log('Cross-app notifications table needs to be created');
-    }
-  };
+  const { user } = useAuth();
 
   // Fetch notifications from the database
   const fetchNotifications = async () => {
+    if (!user) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const { data: user } = await supabase.auth.getUser();
-      
-      if (!user.user) {
-        setNotifications([]);
-        return;
-      }
-
-      const { data, error } = await supabase
+      const { data, error } = await sharedClient
         .from('cross_app_notifications')
         .select('*')
-        .eq('user_id', user.user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -55,7 +44,7 @@ export const useCrossAppNotifications = () => {
       }
 
       setNotifications(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching notifications:', err);
       setError('Failed to fetch notifications');
     } finally {
@@ -64,25 +53,20 @@ export const useCrossAppNotifications = () => {
   };
 
   // Send notification to another app
-  const sendCrossAppNotification = async (notification: Omit<CrossAppNotification, 'id' | 'created_at' | 'user_id'>) => {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('User not authenticated');
+  const sendCrossAppNotification = async (notification: Omit<CrossAppNotification, 'id' | 'created_at' | 'user_id' | 'is_read'>) => {
+    if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+    try {
+      const { data, error } = await sharedClient
         .from('cross_app_notifications')
         .insert({
           ...notification,
-          user_id: user.user.id,
-          created_at: new Date().toISOString(),
+          user_id: user.id,
         })
         .select()
         .single();
 
       if (error) throw error;
-
-      // Add to local state
-      setNotifications(prev => [data, ...prev]);
       
       return data;
     } catch (err) {
@@ -93,10 +77,12 @@ export const useCrossAppNotifications = () => {
 
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+
     try {
-      const { error } = await supabase
+      const { error } = await sharedClient
         .from('cross_app_notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
@@ -105,7 +91,7 @@ export const useCrossAppNotifications = () => {
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === notificationId 
-            ? { ...notif, read: true }
+            ? { ...notif, is_read: true }
             : notif
         )
       );
@@ -116,12 +102,13 @@ export const useCrossAppNotifications = () => {
   };
 
   // Send notification to CalcReno about RenoTimeline events
-  const notifyCalcReno = async (projectId: string, eventType: string, data: any) => {
+  const notifyCalcReno = async (projectId: string, eventType: string, eventData: any) => {
+    if (!user) return;
+
     try {
-      // Get project details
-      const { data: project } = await supabase
+      const { data: project } = await renotimelineClient
         .from('projects')
-        .select('name, calcreno_project_id, calcreno_reference_url')
+        .select('name, calcreno_project_id')
         .eq('id', projectId)
         .single();
 
@@ -131,16 +118,12 @@ export const useCrossAppNotifications = () => {
       }
 
       const notification = {
-        project_id: projectId,
-        calcreno_project_id: project.calcreno_project_id,
-        source_app: 'renotimeline' as const,
-        type: eventType as any,
-        title: `Aktualizacja z RenoTimeline - ${project.name}`,
+        from_app: 'renotimeline',
+        to_app: 'calcreno',
+        notification_type: eventType,
+        title: `Aktualizacja z RenoTimeline: ${project.name}`,
         message: `${eventType} w projekcie ${project.name}`,
-        priority: 'medium' as const,
-        data,
-        calcreno_reference_url: project.calcreno_reference_url,
-        read: false,
+        data: { ...eventData, projectId, calcrenoProjectId: project.calcreno_project_id },
       };
 
       await sendCrossAppNotification(notification);
@@ -151,45 +134,35 @@ export const useCrossAppNotifications = () => {
 
   // Setup real-time subscription
   useEffect(() => {
-    let subscription: any;
+    if (!user) return;
 
-    const setupSubscription = async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      subscription = supabase
-        .channel('cross_app_notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'cross_app_notifications',
-            filter: `user_id=eq.${user.user.id}`,
-          },
-          (payload) => {
-            setNotifications(prev => [payload.new as CrossAppNotification, ...prev]);
-          }
-        )
-        .subscribe();
-    };
-
-    setupSubscription();
+    const channel = sharedClient
+      .channel('cross_app_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'shared_schema',
+          table: 'cross_app_notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as CrossAppNotification, ...prev]);
+        }
+      )
+      .subscribe();
 
     return () => {
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
+      sharedClient.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   // Initial fetch
   useEffect(() => {
-    initializeNotificationsTable();
     fetchNotifications();
-  }, []);
+  }, [user]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return {
     notifications,

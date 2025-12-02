@@ -49,30 +49,30 @@ const WorkflowOnboarding: React.FC<WorkflowOnboardingProps> = ({
   const onboardingSteps: OnboardingStep[] = [
     {
       id: 'welcome',
-      title: 'Witamy w świecie automatyzacji! 🚀',
+      title: 'Witamy w świecie automatyzacji',
       description: 'Odkryj jak workflow mogą zrewolucjonizować sposób, w jaki zarządzasz projektami.',
       icon: <Sparkles className="w-10 h-10 text-yellow-500 animate-pulse" />,
       content: {
         mainPoints: [
-          '⚡ Oszczędzaj godziny pracy każdego tygodnia',
-          '🎯 Eliminuj błędy ludzkie w powtarzalnych procesach',
-          '📈 Zwiększ produktywność całego zespołu',
-          '🔄 Automatyzuj zadania 24/7 bez Twojej interwencji'
+          'Oszczędzaj godziny pracy każdego tygodnia',
+          'Eliminuj błędy ludzkie w powtarzalnych procesach',
+          'Zwiększ produktywność całego zespołu',
+          'Automatyzuj zadania 24/7 bez Twojej interwencji'
         ],
         tip: 'Firmy używające automatyzacji zwiększają efektywność o średnio 30%!'
       }
     },
     {
       id: 'triggers',
-      title: 'Kiedy magia się zaczyna ⚡',
+      title: 'Kiedy magia się zaczyna',
       description: 'Wyzwalacze to wydarzenia, które uruchamiają Twoje automatyzacje.',
       icon: <Target className="w-10 h-10 text-blue-500" />,
       content: {
         mainPoints: [
-          '📝 Gdy zadanie zmieni status (todo → in progress → done)',
-          '➕ Gdy zostanie utworzone nowe zadanie',
-          '⏰ Gdy zbliża się termin wykonania',
-          '👤 Gdy zadanie zostanie przypisane'
+          'Gdy zadanie zmieni status (todo → in progress → done)',
+          'Gdy zostanie utworzone nowe zadanie',
+          'Gdy zbliża się termin wykonania',
+          'Gdy zadanie zostanie przypisane'
         ],
         examples: [
           'Status zadania: "todo" → "done"',
@@ -84,15 +84,15 @@ const WorkflowOnboarding: React.FC<WorkflowOnboardingProps> = ({
     },
     {
       id: 'actions',
-      title: 'Co może się wydarzyć 🎭',
+      title: 'Co może się wydarzyć',
       description: 'Akcje to rzeczywiste operacje wykonywane automatycznie.',
       icon: <Cog className="w-10 h-10 text-green-500 animate-spin" style={{ animationDuration: '3s' }} />,
       content: {
         mainPoints: [
-          '📨 Wyślij powiadomienie do członków zespołu',
-          '✏️ Zaktualizuj właściwości zadania',
-          '👥 Przypisz zadanie do konkretnej osoby',
-          '📋 Utwórz kolejne zadanie'
+          'Wyślij powiadomienie do członków zespołu',
+          'Zaktualizuj właściwości zadania',
+          'Przypisz zadanie do konkretnej osoby',
+          'Utwórz kolejne zadanie'
         ],
         examples: [
           'Powiadom managera o ukończeniu',
@@ -104,15 +104,15 @@ const WorkflowOnboarding: React.FC<WorkflowOnboardingProps> = ({
     },
     {
       id: 'variables',
-      title: 'Dynamiczna inteligencja 🧠',
+      title: 'Dynamiczna inteligencja',
       description: 'Zmienne sprawiają, że Twoje automatyzacje są smart i personalizowane.',
       icon: <Code className="w-10 h-10 text-orange-500" />,
       content: {
         mainPoints: [
-          '📄 {task.title} - nazwa zadania, które wywołało workflow',
-          '👤 {task.assigned_to} - osoba odpowiedzialna',
-          '📁 {project.name} - nazwa projektu',
-          '⏱️ {trigger.timestamp} - kiedy się wydarzyło'
+          '{task.title} - nazwa zadania, które wywołało workflow',
+          '{task.assigned_to} - osoba odpowiedzialna',
+          '{project.name} - nazwa projektu',
+          '{trigger.timestamp} - kiedy się wydarzyło'
         ],
         examples: [
           '"Zadanie {task.title} zostało ukończone!"',
@@ -124,15 +124,15 @@ const WorkflowOnboarding: React.FC<WorkflowOnboardingProps> = ({
     },
     {
       id: 'examples',
-      title: 'Inspiracje dla Ciebie 💡',
+      title: 'Inspiracje dla Ciebie',
       description: 'Zobacz popularne scenariusze, które możesz wdrożyć już dziś.',
       icon: <Lightbulb className="w-10 h-10 text-purple-500 animate-bounce" />,
       content: {
         mainPoints: [
-          '📧 "Powiadom managera gdy zadanie jest gotowe"',
-          '🔍 "Auto-przypisz zadania testowe po review"',
-          '📅 "Utwórz follow-up tydzień po zamknięciu"',
-          '⚠️ "Alert o zbliżających się deadline\'ach"'
+          '"Powiadom managera gdy zadanie jest gotowe"',
+          '"Auto-przypisz zadania testowe po review"',
+          '"Utwórz follow-up tydzień po zamknięciu"',
+          '"Alert o zbliżających się deadline\'ach"'
         ],
         examples: [
           'Wyzwalacz: Status → "done" | Akcja: Powiadom managera',
@@ -144,20 +144,20 @@ const WorkflowOnboarding: React.FC<WorkflowOnboardingProps> = ({
     },
     {
       id: 'monitoring',
-      title: 'Pełna kontrola 📊',
+      title: 'Pełna kontrola',
       description: 'Monitoruj swoje automatyzacje i otrzymuj szczegółowe raporty.',
       icon: <Bell className="w-10 h-10 text-red-500" />,
       content: {
         mainPoints: [
-          '📈 Historia wszystkich wykonań w real-time',
-          '🔔 Powiadomienia o każdym uruchomieniu',
-          '🐛 Automatyczne wykrywanie i raportowanie błędów',
-          '📊 Statystyki efektywności Twoich workflow'
+          'Historia wszystkich wykonań w real-time',
+          'Powiadomienia o każdym uruchomieniu',
+          'Automatyczne wykrywanie i raportowanie błędów',
+          'Statystyki efektywności Twoich workflow'
         ],
         examples: [
-          '✅ "Workflow wykonano pomyślnie (2.3s)"',
-          '❌ "Błąd: Brak uprawnień do aktualizacji"',
-          '📊 "Średni czas wykonania: 1.8s"'
+          '"Workflow wykonano pomyślnie (2.3s)"',
+          '"Błąd: Brak uprawnień do aktualizacji"',
+          '"Średni czas wykonania: 1.8s"'
         ],
         tip: 'Regularnie sprawdzaj statystyki, żeby optymalizować swoje automatyzacje!'
       }

@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { Plus, Trash2, Info, Wand2, CheckCircle, User, Calendar, FileText, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Info, Wand2, CheckCircle, User, Calendar, FileText, AlertCircle, Mail, Settings } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 
 interface SimpleEnhancedActionBuilderProps {
@@ -26,23 +26,72 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
     { 
       value: 'update_task', 
       label: 'Aktualizuj zadanie', 
-      icon: '✏️',
+      icon: '',
       description: 'Zmienia status, priorytet lub inne właściwości zadania',
       color: 'bg-blue-600/10 border-blue-400/30'
     },
     { 
       value: 'send_notification', 
       label: 'Wyślij powiadomienie', 
-      icon: '🔔',
+      icon: '',
       description: 'Wysyła powiadomienie do użytkowników',
       color: 'bg-indigo-600/10 border-indigo-400/30'
     },
     { 
       value: 'add_comment', 
       label: 'Dodaj komentarz', 
-      icon: '💬',
+      icon: '',
       description: 'Dodaje automatyczny komentarz do zadania',
       color: 'bg-cyan-600/10 border-cyan-400/30'
+    },
+    { 
+      value: 'create_task', 
+      label: 'Utwórz zadanie', 
+      icon: '',
+      description: 'Tworzy nowe zadanie w projekcie',
+      color: 'bg-green-600/10 border-green-400/30'
+    },
+    { 
+      value: 'send_email', 
+      label: 'Wyślij email', 
+      icon: '',
+      description: 'Wysyła wiadomość email do użytkownika',
+      color: 'bg-purple-600/10 border-purple-400/30'
+    },
+    { 
+      value: 'update_custom_field', 
+      label: 'Aktualizuj pole niestandardowe', 
+      icon: '',
+      description: 'Zmienia wartość pola niestandardowego',
+      color: 'bg-orange-600/10 border-orange-400/30'
+    },
+    { 
+      value: 'move_to_project', 
+      label: 'Przenieś do projektu', 
+      icon: '',
+      description: 'Przenosi zadanie do innego projektu',
+      color: 'bg-pink-600/10 border-pink-400/30'
+    },
+    { 
+      value: 'assign_to_user', 
+      label: 'Przypisz użytkownikowi', 
+      icon: '',
+      description: 'Przypisuje zadanie wybranemu użytkownikowi',
+      color: 'bg-teal-600/10 border-teal-400/30'
+    },
+    { 
+      value: 'create_calendar_event', 
+      label: 'Utwórz wydarzenie w kalendarzu', 
+      icon: '',
+      description: 'Dodaje wydarzenie do kalendarza',
+      color: 'bg-yellow-600/10 border-yellow-400/30'
+    },
+    { 
+      value: 'update_project_status', 
+      label: 'Aktualizuj status projektu', 
+      icon: '',
+      description: 'Zmienia status całego projektu',
+      color: 'bg-red-600/10 border-red-400/30'
     }
   ];
 
@@ -161,9 +210,9 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
             saveStatus === 'saving' ? 'text-blue-300' : 
             'text-red-300'
           }`}>
-            {saveStatus === 'saved' && '✅ Akcja została zapisana pomyślnie!'}
-            {saveStatus === 'saving' && '💾 Zapisywanie...'}
-            {saveStatus === 'error' && '❌ Błąd podczas zapisywania. Spróbuj ponownie.'}
+            {saveStatus === 'saved' && 'Akcja została zapisana pomyślnie!'}
+            {saveStatus === 'saving' && 'Zapisywanie...'}
+            {saveStatus === 'error' && 'Błąd podczas zapisywania. Spróbuj ponownie.'}
           </AlertDescription>
         </Alert>
       )}
@@ -215,7 +264,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                 <h4 className="font-semibold text-slate-200">Dostępne Zmienne</h4>
               </div>
               <div className="text-sm text-blue-300 bg-blue-900/30 border border-blue-500/30 p-3 rounded-md">
-                💡 <strong>Jak używać:</strong> Kliknij na zmienną poniżej, aby ją wstawić do pola tekstowego. 
+                <strong>Jak używać:</strong> Kliknij na zmienną poniżej, aby ją wstawić do pola tekstowego. 
                 Zmienne automatycznie zastąpią się prawdziwymi wartościami podczas wykonywania.
               </div>
               
@@ -254,7 +303,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
         <Card className="border-dashed border-2 border-gray-300">
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <div className="text-4xl mb-4">🚀</div>
+              <div className="text-4xl mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Jeszcze nie ma żadnych akcji
               </h3>
@@ -371,10 +420,10 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                               <SelectValue placeholder="Wybierz status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="todo">📋 Do zrobienia</SelectItem>
-                              <SelectItem value="in_progress">⚡ W trakcie</SelectItem>
-                              <SelectItem value="review">👀 Do przeglądu</SelectItem>
-                              <SelectItem value="done">✅ Ukończone</SelectItem>
+                              <SelectItem value="todo">Do zrobienia</SelectItem>
+                              <SelectItem value="in_progress">W trakcie</SelectItem>
+                              <SelectItem value="review">Do przeglądu</SelectItem>
+                              <SelectItem value="done">Ukończone</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -434,7 +483,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`message-${index}`, '{task.title}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                📋 Nazwa zadania
+                                Nazwa zadania
                               </Button>
                               <Button
                                 type="button"
@@ -443,7 +492,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`message-${index}`, '{user.name}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                👤 Imię użytkownika
+                                Imię użytkownika
                               </Button>
                               <Button
                                 type="button"
@@ -452,14 +501,14 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`message-${index}`, '{current_date}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                📅 Dzisiejsza data
+                                Dzisiejsza data
                               </Button>
                             </div>
                           </div>
                         </div>
                         
                         <div className="text-xs text-indigo-300 bg-indigo-600/20 border border-indigo-400/30 p-2 rounded">
-                          💡 <strong>Podgląd:</strong> {action.config?.message?.replace('{task.title}', 'Przykładowe zadanie')
+                          <strong>Podgląd:</strong> {action.config?.message?.replace('{task.title}', 'Przykładowe zadanie')
                             ?.replace('{user.name}', 'Jan Kowalski')
                             ?.replace('{current_date}', '2024-02-15') || 'Wprowadź treść powiadomienia'}
                         </div>
@@ -493,7 +542,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`comment-${index}`, '{task.title}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                📋 Nazwa zadania
+                                Nazwa zadania
                               </Button>
                               <Button
                                 type="button"
@@ -502,7 +551,7 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`comment-${index}`, '{user.name}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                👤 Imię użytkownika
+                                Imię użytkownika
                               </Button>
                               <Button
                                 type="button"
@@ -511,17 +560,262 @@ export function SimpleEnhancedActionBuilder({ actions, onActionsChange }: Simple
                                 onClick={() => insertVariable(`comment-${index}`, '{current_date}')}
                                 className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
                               >
-                                📅 Dzisiejsza data
+                                Dzisiejsza data
                               </Button>
                             </div>
                           </div>
                         </div>
                         
                         <div className="text-xs text-cyan-300 bg-cyan-600/20 border border-cyan-400/30 p-2 rounded">
-                          💡 <strong>Podgląd:</strong> {action.config?.comment?.replace('{task.title}', 'Przykładowe zadanie')
+                          <strong>Podgląd:</strong> {action.config?.comment?.replace('{task.title}', 'Przykładowe zadanie')
                             ?.replace('{user.name}', 'Jan Kowalski')
                             ?.replace('{current_date}', '2024-02-15') || 'Wprowadź treść komentarza'}
                         </div>
+                      </div>
+                    )}
+
+                    {action.type === 'create_task' && (
+                      <div className="space-y-4 p-4 bg-green-600/10 border border-green-400/30 rounded-lg">
+                        <h4 className="font-medium text-green-300 flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Konfiguracja Nowego Zadania
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Tytuł Zadania</Label>
+                          <Input
+                            value={action.config?.title || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, title: e.target.value }
+                            })}
+                            placeholder="np. Nowe zadanie utworzone automatycznie"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Opis Zadania</Label>
+                          <Textarea
+                            value={action.config?.description || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, description: e.target.value }
+                            })}
+                            placeholder="Opisz zadanie..."
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Priorytet</Label>
+                          <Select
+                            value={action.config?.priority || 'medium'}
+                            onValueChange={(value) => updateAction(index, {
+                              config: { ...action.config, priority: value }
+                            })}
+                          >
+                            <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Niski</SelectItem>
+                              <SelectItem value="medium">Średni</SelectItem>
+                              <SelectItem value="high">Wysoki</SelectItem>
+                              <SelectItem value="urgent">Pilny</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {action.type === 'send_email' && (
+                      <div className="space-y-4 p-4 bg-purple-600/10 border border-purple-400/30 rounded-lg">
+                        <h4 className="font-medium text-purple-300 flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Konfiguracja Email
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Adres Email Odbiorcy</Label>
+                          <Input
+                            value={action.config?.recipient_email || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, recipient_email: e.target.value }
+                            })}
+                            placeholder="np. {user.email} lub konkretny@email.com"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Temat Email</Label>
+                          <Input
+                            value={action.config?.subject || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, subject: e.target.value }
+                            })}
+                            placeholder="np. Aktualizacja zadania: {task.title}"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Treść Email</Label>
+                          <Textarea
+                            value={action.config?.message || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, message: e.target.value }
+                            })}
+                            placeholder="Treść wiadomości email..."
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500 min-h-[80px]"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {action.type === 'assign_to_user' && (
+                      <div className="space-y-4 p-4 bg-teal-600/10 border border-teal-400/30 rounded-lg">
+                        <h4 className="font-medium text-teal-300 flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Konfiguracja Przypisania
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Przypisz do użytkownika</Label>
+                          <Input
+                            value={action.config?.user_id || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, user_id: e.target.value }
+                            })}
+                            placeholder="ID użytkownika lub {user.id}"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {action.type === 'update_custom_field' && (
+                      <div className="space-y-4 p-4 bg-orange-600/10 border border-orange-400/30 rounded-lg">
+                        <h4 className="font-medium text-orange-300 flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Konfiguracja Pola Niestandardowego
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Nazwa Pola</Label>
+                          <Input
+                            value={action.config?.field_id || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, field_id: e.target.value }
+                            })}
+                            placeholder="np. status_custom lub priority_level"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Nowa Wartość</Label>
+                          <Input
+                            value={action.config?.value || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, value: e.target.value }
+                            })}
+                            placeholder="Wprowadź nową wartość"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {action.type === 'create_calendar_event' && (
+                      <div className="space-y-4 p-4 bg-yellow-600/10 border border-yellow-400/30 rounded-lg">
+                        <h4 className="font-medium text-yellow-300 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Konfiguracja Wydarzenia Kalendarza
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">Tytuł Wydarzenia</Label>
+                          <Input
+                            value={action.config?.title || ''}
+                            onChange={(e) => updateAction(index, {
+                              config: { ...action.config, title: e.target.value }
+                            })}
+                            placeholder="np. Spotkanie w sprawie: {task.title}"
+                            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-slate-300">Data Rozpoczęcia</Label>
+                            <Input
+                              type="datetime-local"
+                              value={action.config?.start_time || ''}
+                              onChange={(e) => updateAction(index, {
+                                config: { ...action.config, start_time: e.target.value }
+                              })}
+                              className="bg-slate-800 border-slate-600 text-slate-200"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-slate-300">Data Zakończenia</Label>
+                            <Input
+                              type="datetime-local"
+                              value={action.config?.end_time || ''}
+                              onChange={(e) => updateAction(index, {
+                                config: { ...action.config, end_time: e.target.value }
+                              })}
+                              className="bg-slate-800 border-slate-600 text-slate-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(action.type === 'move_to_project' || action.type === 'update_project_status') && (
+                      <div className="space-y-4 p-4 bg-pink-600/10 border border-pink-400/30 rounded-lg">
+                        <h4 className="font-medium text-pink-300 flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Konfiguracja Projektu
+                        </h4>
+                        
+                        {action.type === 'move_to_project' && (
+                          <div className="space-y-2">
+                            <Label className="text-slate-300">Docelowy Projekt</Label>
+                            <Input
+                              value={action.config?.target_project_id || ''}
+                              onChange={(e) => updateAction(index, {
+                                config: { ...action.config, target_project_id: e.target.value }
+                              })}
+                              placeholder="ID projektu docelowego"
+                              className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+                            />
+                          </div>
+                        )}
+
+                        {action.type === 'update_project_status' && (
+                          <div className="space-y-2">
+                            <Label className="text-slate-300">Nowy Status Projektu</Label>
+                            <Select
+                              value={action.config?.status || 'active'}
+                              onValueChange={(value) => updateAction(index, {
+                                config: { ...action.config, status: value }
+                              })}
+                            >
+                              <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="planning">Planowanie</SelectItem>
+                                <SelectItem value="active">Aktywny</SelectItem>
+                                <SelectItem value="on_hold">Wstrzymany</SelectItem>
+                                <SelectItem value="completed">Ukończony</SelectItem>
+                                <SelectItem value="cancelled">Anulowany</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

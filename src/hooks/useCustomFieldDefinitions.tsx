@@ -1,28 +1,45 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { renotimelineClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { Database } from '@/integrations/supabase/types';
+import { useAuth } from './useAuth';
 
-export type FieldType = Database['public']['Enums']['field_type'];
-export type EntityType = Database['public']['Enums']['entity_type'];
-export type CustomFieldDefinition = Database['public']['Tables']['custom_field_definitions']['Row'];
-export type CreateFieldDefinitionData = Database['public']['Tables']['custom_field_definitions']['Insert'];
-export type UpdateFieldDefinitionData = Database['public']['Tables']['custom_field_definitions']['Update'];
+// Assuming types will be regenerated, but for now, let's define them manually based on the new schema.
+export type FieldType = 'text' | 'number' | 'date' | 'select' | 'checkbox';
+export type EntityType = 'task' | 'project';
+
+export interface CustomFieldDefinition {
+  id: string;
+  project_id: string;
+  name: string;
+  field_type: FieldType;
+  entity_type: EntityType;
+  options?: any; // JSONB
+  default_value?: string;
+  is_required: boolean;
+  position?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateFieldDefinitionData extends Omit<CustomFieldDefinition, 'id' | 'created_at' | 'updated_at'> {}
+export interface UpdateFieldDefinitionData extends Partial<Omit<CustomFieldDefinition, 'id' | 'created_at' | 'updated_at'>> {}
+
 
 export const useCustomFieldDefinitions = (projectId?: string, entityType?: EntityType) => {
   const [definitions, setDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchDefinitions = async () => {
-    if (!projectId) return;
+    if (!projectId || !user) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      let query = supabase
+      let query = renotimelineClient
         .from('custom_field_definitions')
         .select('*')
         .eq('project_id', projectId)
@@ -56,18 +73,18 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
     setError(null);
 
     try {
-      const { data: newDefinition, error: createError } = await supabase
+      const { data: newDefinition, error: createError } = await renotimelineClient
         .from('custom_field_definitions')
         .insert([{
           ...data,
-          position: data.position || definitions.length
+          position: data.position ?? definitions.length
         }])
         .select()
         .single();
 
       if (createError) throw createError;
 
-      setDefinitions(prev => [...prev, newDefinition].sort((a, b) => (a.position || 0) - (b.position || 0)));
+      setDefinitions(prev => [...prev, newDefinition].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)));
       
       toast({
         title: 'Success',
@@ -94,7 +111,7 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
     setError(null);
 
     try {
-      const { data: updatedDefinition, error: updateError } = await supabase
+      const { data: updatedDefinition, error: updateError } = await renotimelineClient
         .from('custom_field_definitions')
         .update(updates)
         .eq('id', id)
@@ -105,7 +122,7 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
 
       setDefinitions(prev => 
         prev.map(def => def.id === id ? updatedDefinition : def)
-           .sort((a, b) => (a.position || 0) - (b.position || 0))
+           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       );
 
       toast({
@@ -133,7 +150,7 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
     setError(null);
 
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await renotimelineClient
         .from('custom_field_definitions')
         .delete()
         .eq('id', id);
@@ -167,22 +184,22 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
     setError(null);
 
     try {
-      // Update positions for all definitions
       const updates = reorderedDefinitions.map((def, index) => ({
         id: def.id,
         position: index
       }));
 
+      // Supabase doesn't support batch updates in a single request through the JS client like this.
+      // It's better to loop or use an RPC function for this.
       for (const update of updates) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await renotimelineClient
           .from('custom_field_definitions')
           .update({ position: update.position })
           .eq('id', update.id);
 
         if (updateError) throw updateError;
       }
-
-      // Update local state
+      
       setDefinitions(reorderedDefinitions);
 
       toast({
@@ -206,10 +223,10 @@ export const useCustomFieldDefinitions = (projectId?: string, entityType?: Entit
   };
 
   useEffect(() => {
-    if (projectId) {
+    if (projectId && user) {
       fetchDefinitions();
     }
-  }, [projectId, entityType]);
+  }, [projectId, entityType, user]);
 
   return {
     definitions,

@@ -4,7 +4,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { AlertCircle, Calendar, FileUp, MessageSquare, Users, Clock, Zap } from 'lucide-react';
+import { AlertCircle, Calendar, FileUp, MessageSquare, Users, Clock, Zap, Settings } from 'lucide-react';
 import type { WorkflowTriggerType, TriggerConfig } from '../../lib/types/workflow';
 
 interface TriggerSelectorProps {
@@ -56,6 +56,34 @@ const triggerOptions = [
     description: 'Gdy plik zostanie przesłany do projektu',
     icon: FileUp,
     color: 'bg-cyan-500'
+  },
+  {
+    value: 'comment_added' as WorkflowTriggerType,
+    label: 'Dodanie komentarza',
+    description: 'Gdy zostanie dodany komentarz do zadania',
+    icon: MessageSquare,
+    color: 'bg-pink-500'
+  },
+  {
+    value: 'project_status_changed' as WorkflowTriggerType,
+    label: 'Zmiana statusu projektu',
+    description: 'Gdy status całego projektu zostanie zmieniony',
+    icon: Settings,
+    color: 'bg-yellow-500'
+  },
+  {
+    value: 'team_member_added' as WorkflowTriggerType,
+    label: 'Dodanie członka zespołu',
+    description: 'Gdy nowy członek zostanie dodany do projektu',
+    icon: Users,
+    color: 'bg-teal-500'
+  },
+  {
+    value: 'scheduled' as WorkflowTriggerType,
+    label: 'Zaplanowany czas',
+    description: 'Uruchamiaj w określonych terminach',
+    icon: Clock,
+    color: 'bg-red-500'
   }
 ];
 
@@ -205,7 +233,7 @@ export function TriggerSelector({
                 <div className="md:col-span-2">
                   <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                     <p className="text-sm text-blue-300">
-                      💡 Jeśli nie wybierzesz statusów, przepływ uruchomi się przy każdej zmianie statusu zadania.
+                      Jeśli nie wybierzesz statusów, przepływ uruchomi się przy każdej zmianie statusu zadania.
                     </p>
                   </div>
                 </div>
@@ -254,7 +282,7 @@ export function TriggerSelector({
                 
                 <div className="p-3 bg-orange-900/20 border border-orange-500/30 rounded-lg">
                   <p className="text-sm text-orange-300">
-                    ⏰ Ten wyzwalacz będzie sprawdzany codziennie o 9:00 rano.
+                    Ten wyzwalacz będzie sprawdzany codziennie o 9:00 rano.
                   </p>
                 </div>
               </div>
@@ -291,7 +319,7 @@ export function TriggerSelector({
                 
                 <div className="p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-lg">
                   <p className="text-sm text-indigo-300">
-                    🎯 Przepływ uruchomi się gdy wartość wybranego pola się zmieni.
+                    Przepływ uruchomi się gdy wartość wybranego pola się zmieni.
                   </p>
                 </div>
               </div>
@@ -340,6 +368,209 @@ export function TriggerSelector({
               </div>
             )}
 
+            {/* Comment Added Configuration */}
+            {selectedTrigger === 'comment_added' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="comment_type_filter">Typ komentarza (opcjonalne)</Label>
+                  <Select
+                    value={(localConfig as any).comment_type_filter || 'all'}
+                    onValueChange={(value) => updateConfig('comment_type_filter', value === 'all' ? undefined : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wszystkie komentarze" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Wszystkie komentarze</SelectItem>
+                      <SelectItem value="user">Tylko od użytkowników</SelectItem>
+                      <SelectItem value="system">Tylko systemowe</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="p-3 bg-pink-900/20 border border-pink-500/30 rounded-lg">
+                  <p className="text-sm text-pink-300">
+                    💬 Przepływ uruchomi się gdy zostanie dodany komentarz do zadania.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Project Status Changed Configuration */}
+            {selectedTrigger === 'project_status_changed' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="from_project_status">Ze statusu (opcjonalne)</Label>
+                  <Select
+                    value={(localConfig as any).from_project_status || 'any'}
+                    onValueChange={(value) => updateConfig('from_project_status', value === 'any' ? undefined : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Dowolny status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Dowolny status</SelectItem>
+                      <SelectItem value="planning">Planowanie</SelectItem>
+                      <SelectItem value="active">Aktywny</SelectItem>
+                      <SelectItem value="on_hold">Wstrzymany</SelectItem>
+                      <SelectItem value="completed">Ukończony</SelectItem>
+                      <SelectItem value="cancelled">Anulowany</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="to_project_status">Do statusu (opcjonalne)</Label>
+                  <Select
+                    value={(localConfig as any).to_project_status || 'any'}
+                    onValueChange={(value) => updateConfig('to_project_status', value === 'any' ? undefined : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Dowolny status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Dowolny status</SelectItem>
+                      <SelectItem value="planning">Planowanie</SelectItem>
+                      <SelectItem value="active">Aktywny</SelectItem>
+                      <SelectItem value="on_hold">Wstrzymany</SelectItem>
+                      <SelectItem value="completed">Ukończony</SelectItem>
+                      <SelectItem value="cancelled">Anulowany</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <p className="text-sm text-yellow-300">
+                    🎯 Przepływ uruchomi się gdy status projektu zostanie zmieniony.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Team Member Added Configuration */}
+            {selectedTrigger === 'team_member_added' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="role_filter">Filtr ról (opcjonalne)</Label>
+                  <Select
+                    value={(localConfig as any).role_filter || 'all'}
+                    onValueChange={(value) => updateConfig('role_filter', value === 'all' ? undefined : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wszystkie role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Wszystkie role</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="member">Członek</SelectItem>
+                      <SelectItem value="viewer">Obserwator</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="p-3 bg-teal-900/20 border border-teal-500/30 rounded-lg">
+                  <p className="text-sm text-teal-300">
+                    👥 Przepływ uruchomi się gdy nowy członek zostanie dodany do zespołu.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Scheduled Configuration */}
+            {selectedTrigger === 'scheduled' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="schedule_type">Typ harmonogramu</Label>
+                  <Select
+                    value={(localConfig as any).schedule_type || 'daily'}
+                    onValueChange={(value) => updateConfig('schedule_type', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Codziennie</SelectItem>
+                      <SelectItem value="weekly">Co tydzień</SelectItem>
+                      <SelectItem value="monthly">Co miesiąc</SelectItem>
+                      <SelectItem value="custom">Niestandardowy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="execution_time">Godzina wykonania</Label>
+                  <Input
+                    id="execution_time"
+                    type="time"
+                    value={(localConfig as any).execution_time || '09:00'}
+                    onChange={(e) => updateConfig('execution_time', e.target.value)}
+                    className="bg-slate-800 border-slate-600 text-slate-200"
+                  />
+                </div>
+                
+                {(localConfig as any).schedule_type === 'weekly' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="day_of_week">Dzień tygodnia</Label>
+                    <Select
+                      value={(localConfig as any).day_of_week || 'monday'}
+                      onValueChange={(value) => updateConfig('day_of_week', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monday">Poniedziałek</SelectItem>
+                        <SelectItem value="tuesday">Wtorek</SelectItem>
+                        <SelectItem value="wednesday">Środa</SelectItem>
+                        <SelectItem value="thursday">Czwartek</SelectItem>
+                        <SelectItem value="friday">Piątek</SelectItem>
+                        <SelectItem value="saturday">Sobota</SelectItem>
+                        <SelectItem value="sunday">Niedziela</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                {(localConfig as any).schedule_type === 'monthly' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="day_of_month">Dzień miesiąca</Label>
+                    <Input
+                      id="day_of_month"
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={(localConfig as any).day_of_month || '1'}
+                      onChange={(e) => updateConfig('day_of_month', parseInt(e.target.value))}
+                      className="bg-slate-800 border-slate-600 text-slate-200"
+                    />
+                  </div>
+                )}
+                
+                {(localConfig as any).schedule_type === 'custom' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="cron_expression">Wyrażenie CRON</Label>
+                    <Input
+                      id="cron_expression"
+                      value={(localConfig as any).cron_expression || '0 9 * * *'}
+                      onChange={(e) => updateConfig('cron_expression', e.target.value)}
+                      placeholder="0 9 * * * (codziennie o 9:00)"
+                      className="bg-slate-800 border-slate-600 text-slate-200"
+                    />
+                    <p className="text-xs text-gray-400">
+                      Format: minuta godzina dzień miesiąc dzień_tygodnia
+                    </p>
+                  </div>
+                )}
+                
+                <div className="p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                  <p className="text-sm text-red-300">
+                    🕒 Przepływ będzie uruchamiany automatycznie zgodnie z harmonogramem.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Task Created - simple trigger, no config needed */}
             {selectedTrigger === 'task_created' && (
               <div className="p-6 bg-green-900/20 border-2 border-green-500/30 rounded-lg">
@@ -371,7 +602,7 @@ export function TriggerSelector({
               <div className="mt-6 p-6 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-lg">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <Label className="text-sm font-semibold text-blue-300">🔧 Podgląd Konfiguracji Wyzwalacza</Label>
+                  <Label className="text-sm font-semibold text-blue-300">Podgląd Konfiguracji Wyzwalacza</Label>
                 </div>
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -390,7 +621,7 @@ export function TriggerSelector({
                   </div>
                   <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded-md">
                     <p className="text-xs text-green-300 flex items-center gap-2">
-                      <span className="text-green-400">✅</span>
+                      <span className="text-green-400">✓</span>
                       Wyzwalacz zostanie uruchomiony gdy spełnione będą powyższe warunki
                     </p>
                   </div>

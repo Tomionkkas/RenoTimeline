@@ -23,15 +23,15 @@ export function EnhancedActionBuilder({ actions, onActionsChange }: EnhancedActi
   const [showVariableHelp, setShowVariableHelp] = useState<boolean>(false);
 
   const actionTypes = [
-    { value: 'update_task', label: 'Aktualizuj zadanie', icon: '✏️' },
-    { value: 'create_task', label: 'Utwórz zadanie', icon: '➕' },
-    { value: 'send_notification', label: 'Wyślij powiadomienie', icon: '🔔' },
-    { value: 'add_comment', label: 'Dodaj komentarz', icon: '💬' },
-    { value: 'update_custom_field', label: 'Aktualizuj pole niestandardowe', icon: '🔧' },
-    { value: 'send_email', label: 'Wyślij email', icon: '📧' },
-    { value: 'create_calendar_event', label: 'Utwórz wydarzenie w kalendarzu', icon: '📅' },
-    { value: 'assign_to_user', label: 'Przypisz do użytkownika', icon: '👤' },
-    { value: 'batch_update_tasks', label: 'Masowa aktualizacja zadań', icon: '📦' }
+    { value: 'update_task', label: 'Aktualizuj zadanie', icon: '' },
+    { value: 'create_task', label: 'Utwórz zadanie', icon: '' },
+    { value: 'send_notification', label: 'Wyślij powiadomienie', icon: '' },
+    { value: 'add_comment', label: 'Dodaj komentarz', icon: '' },
+    { value: 'update_custom_field', label: 'Aktualizuj pole niestandardowe', icon: '' },
+    { value: 'send_email', label: 'Wyślij email', icon: '' },
+    { value: 'create_calendar_event', label: 'Utwórz wydarzenie w kalendarzu', icon: '' },
+    { value: 'assign_to_user', label: 'Przypisz do użytkownika', icon: '' },
+    { value: 'batch_update_tasks', label: 'Masowa aktualizacja zadań', icon: '' }
   ];
 
   const addAction = () => {
@@ -205,7 +205,7 @@ export function EnhancedActionBuilder({ actions, onActionsChange }: EnhancedActi
       {actions.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-6xl mb-4">⚡</div>
+                          <div className="text-6xl mb-4"></div>
             <h3 className="text-lg font-medium mb-2">Brak akcji</h3>
             <p className="text-muted-foreground text-center mb-4">
               Dodaj akcje, które mają zostać wykonane gdy workflow zostanie uruchomiony

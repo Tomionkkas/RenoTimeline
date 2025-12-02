@@ -9,14 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings, Edit, X } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { CustomFieldsSection } from '@/components/ui/CustomFieldsSection';
 import { useCustomFieldValues } from '@/hooks/useCustomFieldValues';
 import TaskChecklist from './TaskChecklist';
 import TaskReminders from './TaskReminders';
-import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
 import { toast } from 'sonner';
+import ComingSoon from '@/components/ui/ComingSoon';
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -24,306 +24,189 @@ interface TaskDetailsDialogProps {
   task: Task | null;
 }
 
+type FormData = {
+  name: string;
+  description: string;
+  project_id: string;
+  due_date: string;
+  status: string;
+  priority: number;
+};
+
 const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChange, task }) => {
   const { updateTask } = useTasks();
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    title: task?.title || '',
-    description: task?.description || '',
-    status: task?.status || 'todo' as const,
-    priority: task?.priority || 'medium' as const,
-    due_date: task?.due_date || '',
-    estimated_hours: task?.estimated_hours?.toString() || ''
+  const { register, control, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormData>({
+    values: {
+      name: task?.name || '',
+      description: task?.description || '',
+      project_id: task?.project_id || '',
+      due_date: task?.end_date ? new Date(task.end_date).toISOString().split('T')[0] : '',
+      status: task?.status || 'pending',
+      priority: task?.priority || 2,
+    }
   });
 
-  // Create a simple form for custom fields only
-  const customFieldsForm = useForm();
+  const { customFieldValues, loading: customFieldsLoading } = useCustomFieldValues(task?.id);
+  const [isEditing, setIsEditing] = useState(false);
 
-  React.useEffect(() => {
-    if (task) {
-      setFormData({
-        title: task.title,
-        description: task.description || '',
-        status: task.status,
-        priority: task.priority,
-        due_date: task.due_date || '',
-        estimated_hours: task.estimated_hours?.toString() || ''
-      });
-    }
-  }, [task]);
-
-  const handleSave = async () => {
+  const onSubmit = async (data: FormData) => {
     if (!task) return;
 
     try {
-      const updates = {
-        title: formData.title,
-        description: formData.description || null,
-        status: formData.status as any,
-        priority: formData.priority as any,
-        due_date: formData.due_date || null,
-        estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : null
-      };
-
-      await updateTask(task.id, updates);
-      
-      // Trigger workflows if status changed
-      if (task.status !== formData.status) {
-        try {
-          await WorkflowTriggers.onTaskStatusChanged(
-            task.id,
-            task.project_id,
-            task.status,
-            formData.status,
-            'current-user-id' // This should come from auth context
-          );
-        } catch (workflowError) {
-          console.error('Workflow trigger failed:', workflowError);
-          // Don't fail the update if workflow triggers fail
-        }
-      }
-      
+      await updateTask({
+        id: task.id,
+        name: data.name,
+        description: data.description,
+        end_date: data.due_date,
+        status: data.status,
+        priority: data.priority,
+      });
+      toast.success('Zadanie zaktualizowane pomyślnie!');
       setIsEditing(false);
-      toast.success('Zadanie zostało zaktualizowane');
     } catch (error) {
-      console.error('Error updating task:', error);
-      toast.error('Nie udało się zaktualizować zadania');
+      toast.error('Wystąpił błąd podczas aktualizacji zadania.');
+      console.error(error);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  if (!task) {
+    return null;
+  }
+
+  const getPriorityBadge = (priority: number) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 1: return <Badge variant="outline" className="text-green-400 border-green-400/50">Niski</Badge>;
+      case 2: return <Badge variant="outline" className="text-blue-400 border-blue-400/50">Średni</Badge>;
+      case 3: return <Badge variant="outline" className="text-orange-400 border-orange-400/50">Wysoki</Badge>;
+      case 4: return <Badge variant="outline" className="text-red-400 border-red-400/50">Pilny</Badge>;
+      default: return <Badge variant="secondary">Brak</Badge>;
     }
   };
 
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'Pilny';
-      case 'high': return 'Wysoki';
-      case 'medium': return 'Średni';
-      case 'low': return 'Niski';
-      default: return 'Nieznany';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'todo': return 'Do zrobienia';
-      case 'in_progress': return 'W toku';
-      case 'review': return 'Do przeglądu';
-      case 'done': return 'Ukończone';
-      default: return 'Nieznany';
+      case 'pending': return <Badge className="bg-gray-400/20 text-gray-200">Oczekujące</Badge>;
+      case 'in_progress': return <Badge className="bg-blue-400/20 text-blue-300">W toku</Badge>;
+      case 'completed': return <Badge className="bg-green-400/20 text-green-300">Ukończone</Badge>;
+      case 'blocked': return <Badge className="bg-red-400/20 text-red-300">Zablokowane</Badge>;
+      default: return <Badge variant="secondary">Brak</Badge>;
     }
   };
-
-  if (!task) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="glassmorphic-card backdrop-blur-xl bg-slate-900/80 border border-slate-700 shadow-2xl max-w-4xl text-white">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            {isEditing ? (
-              <Input
-                {...form.register('title')}
-                className="text-lg font-semibold"
-              />
-            ) : (
-              <span>{task.title}</span>
-            )}
-            <Button
-              variant={isEditing ? "default" : "outline"}
-              size="sm"
-              onClick={isEditing ? handleSave : () => setIsEditing(true)}
-            >
-              {isEditing ? 'Zapisz' : 'Edytuj'}
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-2xl font-bold">{isEditing ? 'Edytuj zadanie' : task.name}</DialogTitle>
+            <Button variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)} className="text-slate-400 hover:text-white hover:bg-slate-700">
+              {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
+              <span className="sr-only">{isEditing ? 'Anuluj edycję' : 'Edytuj'}</span>
             </Button>
-          </DialogTitle>
+          </div>
           <DialogDescription>
-            Szczegóły zadania i zarządzanie
+            Przeglądaj i zarządzaj szczegółami zadania.
           </DialogDescription>
         </DialogHeader>
-
-        <Tabs defaultValue="details" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="details" className="flex items-center space-x-2">
-              <FileText className="w-4 h-4" />
-              <span>Szczegóły</span>
-            </TabsTrigger>
-            <TabsTrigger value="custom-fields" className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>Pola</span>
-            </TabsTrigger>
-            <TabsTrigger value="checklist" className="flex items-center space-x-2">
-              <CheckSquare className="w-4 h-4" />
-              <span>Checklist</span>
-            </TabsTrigger>
-            <TabsTrigger value="reminders" className="flex items-center space-x-2">
-              <Bell className="w-4 h-4" />
-              <span>Przypomnienia</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-4 overflow-y-auto max-h-[60vh]">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                {isEditing ? (
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'todo' | 'in_progress' | 'review' | 'done' }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todo">Do zrobienia</SelectItem>
-                      <SelectItem value="in_progress">W toku</SelectItem>
-                      <SelectItem value="review">Do przeglądu</SelectItem>
-                      <SelectItem value="done">Ukończone</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge>{getStatusLabel(task.status)}</Badge>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priorytet</Label>
-                {isEditing ? (
-                  <Select 
-                    value={formData.priority} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as 'low' | 'medium' | 'high' | 'urgent' }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Niski</SelectItem>
-                      <SelectItem value="medium">Średni</SelectItem>
-                      <SelectItem value="high">Wysoki</SelectItem>
-                      <SelectItem value="urgent">Pilny</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge className={`${getPriorityColor(task.priority)} text-white`}>
-                    <Flag className="w-3 h-3 mr-1" />
-                    {getPriorityLabel(task.priority)}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Opis</Label>
-              {isEditing ? (
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={4}
-                  placeholder="Opisz zadanie..."
-                />
-              ) : (
-                <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md min-h-[100px]">
-                  {task.description || 'Brak opisu'}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Termin wykonania</Label>
-                {isEditing ? (
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-                  />
-                ) : (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <CalendarDays className="w-4 h-4 text-gray-500" />
-                    <span>
-                      {task.due_date 
-                        ? new Date(task.due_date).toLocaleDateString('pl-PL')
-                        : 'Nie ustawiono'
-                      }
-                    </span>
+        
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Tabs defaultValue="details" className="mt-4">
+            <TabsList className="border-b border-slate-700">
+              <TabsTrigger value="details">Szczegóły</TabsTrigger>
+              <TabsTrigger value="checklist">Checklist</TabsTrigger>
+              <TabsTrigger value="reminders">Przypomnienia</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-2 space-y-6">
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-medium text-slate-400">Tytuł zadania</Label>
+                    {isEditing ? (
+                      <Input id="name" {...register('name')} className="mt-1 bg-slate-800 border-slate-600" />
+                    ) : (
+                      <p className="mt-1 text-lg">{task.name}</p>
+                    )}
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Szacowane godziny</Label>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={formData.estimated_hours}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimated_hours: e.target.value }))}
-                    placeholder="0"
-                    min="0"
-                  />
-                ) : (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    <span>{task.estimated_hours || 0} godzin</span>
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium text-slate-400">Opis</Label>
+                    {isEditing ? (
+                      <Textarea id="description" {...register('description')} className="mt-1 min-h-[120px] bg-slate-800 border-slate-600" />
+                    ) : (
+                      <div className="mt-1 p-3 rounded-md bg-slate-800/50 border border-slate-700 min-h-[120px]">
+                        {task.description || <span className="text-slate-500">Brak opisu</span>}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                <div>
-                  <span className="font-medium">Utworzono:</span>
-                  <br />
-                  {new Date(task.created_at).toLocaleDateString('pl-PL', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
                 </div>
-                <div>
-                  <span className="font-medium">Ostatnia aktualizacja:</span>
-                  <br />
-                  {new Date(task.updated_at).toLocaleDateString('pl-PL', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <div className="space-y-6">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-400">Status</Label>
+                    {isEditing ? (
+                      <Select onValueChange={(value) => setValue('status', value)} defaultValue={task.status}>
+                        <SelectTrigger className="mt-1 bg-slate-800 border-slate-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 text-white">
+                          <SelectItem value="pending">Oczekujące</SelectItem>
+                          <SelectItem value="in_progress">W toku</SelectItem>
+                          <SelectItem value="completed">Ukończone</SelectItem>
+                          <SelectItem value="blocked">Zablokowane</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="mt-1">{getStatusBadge(task.status)}</div>
+                    )}
+                  </div>
+                   <div>
+                    <Label className="text-sm font-medium text-slate-400">Priorytet</Label>
+                    {isEditing ? (
+                      <Select onValueChange={(value) => setValue('priority', parseInt(value))} defaultValue={String(task.priority)}>
+                        <SelectTrigger className="mt-1 bg-slate-800 border-slate-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 text-white">
+                          <SelectItem value="1">Niski</SelectItem>
+                          <SelectItem value="2">Średni</SelectItem>
+                          <SelectItem value="3">Wysoki</SelectItem>
+                          <SelectItem value="4">Pilny</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="mt-1">{getPriorityBadge(task.priority)}</div>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="due_date" className="text-sm font-medium text-slate-400 flex items-center">
+                      <CalendarDays className="h-4 w-4 mr-2" /> Termin wykonania
+                    </Label>
+                    {isEditing ? (
+                      <Input id="due_date" type="date" {...register('due_date')} className="mt-1 bg-slate-800 border-slate-600" />
+                    ) : (
+                      <p className="mt-1">{task.end_date ? new Date(task.end_date).toLocaleDateString('pl-PL') : 'Brak'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
+              <div className="mt-8 pt-4 border-t border-slate-700 text-xs text-slate-500 flex justify-between">
+                <span>Utworzono: {new Date(task.created_at).toLocaleString('pl-PL')}</span>
+                <span>Ostatnia aktualizacja: {new Date(task.updated_at).toLocaleString('pl-PL')}</span>
+              </div>
+            </TabsContent>
+            <TabsContent value="checklist">
+              <ComingSoon />
+            </TabsContent>
+            <TabsContent value="reminders">
+              <ComingSoon />
+            </TabsContent>
+          </Tabs>
+
+          {isEditing && (
+            <div className="flex justify-end space-x-4 mt-6">
+              <Button type="button" variant="ghost" onClick={() => setIsEditing(false)} className="hover:bg-slate-700">Anuluj</Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Zapisz zmiany</Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="custom-fields" className="overflow-y-auto max-h-[60vh]">
-            <CustomFieldsSection
-              entityType="task"
-              entityId={task.id}
-              projectId={task.project_id}
-              control={form.control}
-              setValue={form.setValue}
-              errors={form.formState.errors}
-              disabled={!isEditing}
-            />
-          </TabsContent>
-
-          <TabsContent value="checklist" className="overflow-y-auto max-h-[60vh]">
-            <TaskChecklist taskId={task.id} />
-          </TabsContent>
-
-          <TabsContent value="reminders" className="overflow-y-auto max-h-[60vh]">
-            <TaskReminders taskId={task.id} />
-          </TabsContent>
-        </Tabs>
+          )}
+        </form>
       </DialogContent>
     </Dialog>
   );

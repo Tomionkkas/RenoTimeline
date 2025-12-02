@@ -90,12 +90,12 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
 
   const handleTemplateInstall = async (template: WorkflowTemplate, skipCustomization = false) => {
     try {
-      console.log('🚀 Starting template install for:', template.id, { skipCustomization });
+      console.log('Starting template install for:', template.id, { skipCustomization });
       setInstalling(template.id);
 
       // If called from preview dialog and template has variables, show customization dialog
       if (!skipCustomization && template.variables && template.variables.length > 0 && selectedTemplate && !showCustomization) {
-        console.log('📝 Template has variables, showing customization dialog');
+        console.log('Template has variables, showing customization dialog');
         setShowCustomization(true);
         setInstalling(null); // Reset installing state when showing customization
         return;
@@ -106,10 +106,10 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
         ? customizationValues 
         : getDefaultValues(template);
       
-      console.log('🔧 Using values:', valuesToUse);
+      console.log('Using values:', valuesToUse);
 
       const workflowData = applyTemplateCustomization(template, valuesToUse);
-      console.log('📋 Generated workflow data:', workflowData);
+      console.log('Generated workflow data:', workflowData);
       
       // Validate the workflow data before sending
       if (!workflowData.name || !workflowData.trigger_type) {
@@ -124,12 +124,12 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
         throw new Error('Brak akcji w workflow - wymagana co najmniej jedna akcja');
       }
       
-      console.log('✅ Validation passed, creating workflow...');
+      console.log('Validation passed, creating workflow...');
       const result = await createWorkflow(workflowData);
-      console.log('🎉 Workflow created successfully:', result);
+      console.log('Workflow created successfully:', result);
 
       toast({
-        title: '✅ Szablon zainstalowany!',
+        title: 'Szablon zainstalowany!',
         description: `Przepływ "${template.name}" został pomyślnie utworzony.`
       });
 
@@ -145,14 +145,14 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
       }
 
     } catch (error) {
-      console.error('❌ Template installation failed:', error);
+      console.error('Template installation failed:', error);
       
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Nieznany błąd podczas instalacji szablonu';
 
       toast({
-        title: '❌ Błąd instalacji',
+        title: 'Błąd instalacji',
         description: errorMessage,
         variant: 'destructive'
       });
@@ -184,7 +184,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
   };
 
   const applyTemplateCustomization = (template: WorkflowTemplate, values: Record<string, any>) => {
-    console.log('🔧 applyTemplateCustomization called with:', { template: template.id, values });
+    console.log('applyTemplateCustomization called with:', { template: template.id, values });
     
     // Convert user-friendly values to boolean values for the system
     const processedValues = { ...values };
@@ -199,7 +199,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
       }
     });
     
-    console.log('📝 Processed customization values:', processedValues);
+          console.log('Processed customization values:', processedValues);
     
     // Validate required template fields
     if (!template.trigger_type) {
@@ -238,7 +238,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
       created_by: 'template-user' // This will be overridden by the hook with real user ID
     };
 
-    console.log('✅ Generated workflow data:', workflowData);
+    console.log('Generated workflow data:', workflowData);
     
     // Final validation
     if (!workflowData.project_id || !workflowData.name || !workflowData.trigger_type) {
@@ -263,7 +263,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="p-3 bg-blue-800/30 rounded-lg border border-blue-600/30">
-              <span className="text-2xl">{template.icon || '⚙️'}</span>
+                              <span className="text-2xl">{template.icon || ''}</span>
             </div>
             <div className="flex-1">
               <CardTitle className="text-xl text-white">{template.name}</CardTitle>
@@ -441,7 +441,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-white">
               <div className="p-2 bg-blue-800/30 rounded-lg border border-blue-600/30">
-                <span className="text-2xl">{selectedTemplate.icon || '⚙️'}</span>
+                <span className="text-2xl">{selectedTemplate.icon || ''}</span>
               </div>
               {selectedTemplate.name}
             </DialogTitle>
@@ -530,13 +530,13 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
     const template = showInstallDialog.template;
 
     const handleInstallWithDefaults = async () => {
-      console.log('🚀 User chose to install with defaults');
+      console.log('User chose to install with defaults');
       setShowInstallDialog({ show: false, template: null });
       await handleTemplateInstall(template, true);
     };
 
     const handleCustomize = () => {
-      console.log('📝 User chose to customize, showing preview first');
+      console.log('User chose to customize, showing preview first');
       setShowInstallDialog({ show: false, template: null });
       handleTemplatePreview(template);
     };
@@ -564,7 +564,7 @@ const WorkflowTemplates: React.FC<WorkflowTemplatesProps> = ({
             {/* Template info */}
             <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600/30">
               <div className="flex items-center gap-3">
-                <div className="text-2xl">{template.icon || '⚙️'}</div>
+                <div className="text-2xl">{template.icon || ''}</div>
                 <div>
                   <h4 className="font-medium text-white">{template.name}</h4>
                   <p className="text-sm text-gray-300">{template.description}</p>

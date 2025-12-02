@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useProjects } from '@/hooks/useProjects';
 import { toast } from 'sonner';
+import { Calendar, DollarSign, FileText, Target } from 'lucide-react';
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -13,6 +14,8 @@ interface CreateProjectDialogProps {
 }
 
 const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, onOpenChange }) => {
+  const { createProject } = useProjects();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -20,133 +23,160 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ open, onOpenC
     end_date: '',
     budget: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createProject } = useProjects();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.name.trim()) {
       toast.error('Nazwa projektu jest wymagana');
       return;
     }
 
-    setIsSubmitting(true);
-    
+    setLoading(true);
     try {
-      const projectData = {
+      await createProject({
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        budget: formData.budget ? parseFloat(formData.budget) : null
-      };
-
-      await createProject(projectData);
-      
-      toast.success('Projekt został utworzony pomyślnie!');
-      
-      // Reset form
-      setFormData({
-        name: '',
-        description: '',
-        start_date: '',
-        end_date: '',
-        budget: ''
+        budget: formData.budget ? parseFloat(formData.budget) : null,
       });
       
+      toast.success('Projekt został utworzony pomyślnie!');
       onOpenChange(false);
+      setFormData({ name: '', description: '', start_date: '', end_date: '', budget: '' });
     } catch (error) {
-      console.error('Error creating project:', error);
       toast.error('Nie udało się utworzyć projektu');
+      console.error('Error creating project:', error);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Nowy projekt remontowy</DialogTitle>
-          <DialogDescription>
-            Utwórz nowy projekt i zacznij planowanie remontu
-          </DialogDescription>
+      <DialogContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30">
+              <Target className="h-6 w-6 text-blue-400" />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl font-bold text-white">Nowy projekt remontowy</DialogTitle>
+              <DialogDescription className="text-white/60 text-base">
+                Utwórz nowy projekt i zacznij planowanie remontu
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nazwa projektu *</Label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Project Name */}
+          <div className="space-y-3">
+            <Label htmlFor="name" className="text-white/80 font-medium flex items-center space-x-2">
+              <FileText className="h-4 w-4 text-blue-400" />
+              <span>Nazwa projektu *</span>
+            </Label>
             <Input
               id="name"
-              placeholder="np. Remont łazienki"
+              placeholder="np. Remont łazienki, Renowacja kuchni..."
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               required
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Opis</Label>
+
+          {/* Project Description */}
+          <div className="space-y-3">
+            <Label htmlFor="description" className="text-white/80 font-medium">
+              Opis projektu
+            </Label>
             <Textarea
               id="description"
-              placeholder="Opisz projekt remontowy..."
+              placeholder="Krótki opis projektu, cele, wymagania..."
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={3}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl min-h-[100px] resize-none"
+              rows={4}
             />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Data rozpoczęcia</Label>
+
+          {/* Date Range */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label htmlFor="start_date" className="text-white/80 font-medium flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-green-400" />
+                <span>Data rozpoczęcia</span>
+              </Label>
               <Input
                 id="start_date"
                 type="date"
                 value={formData.start_date}
-                onChange={(e) => handleInputChange('start_date', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="end_date">Data zakończenia</Label>
+            <div className="space-y-3">
+              <Label htmlFor="end_date" className="text-white/80 font-medium flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-red-400" />
+                <span>Data zakończenia</span>
+              </Label>
               <Input
                 id="end_date"
                 type="date"
                 value={formData.end_date}
-                onChange={(e) => handleInputChange('end_date', e.target.value)}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               />
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budżet (zł)</Label>
+
+          {/* Budget */}
+          <div className="space-y-3">
+            <Label htmlFor="budget" className="text-white/80 font-medium flex items-center space-x-2">
+              <DollarSign className="h-4 w-4 text-yellow-400" />
+              <span>Budżet (zł)</span>
+            </Label>
             <Input
               id="budget"
               type="number"
-              placeholder="0"
+              placeholder="0.00"
               value={formData.budget}
-              onChange={(e) => handleInputChange('budget', e.target.value)}
+              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/30 rounded-xl h-12"
               min="0"
               step="0.01"
             />
           </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/30 rounded-xl px-6 py-3 transition-all duration-300"
+            >
               Anuluj
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Tworzenie...' : 'Utwórz projekt'}
+            <Button
+              type="submit"
+              disabled={loading || !formData.name.trim()}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Tworzenie...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>Utwórz projekt</span>
+                </div>
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

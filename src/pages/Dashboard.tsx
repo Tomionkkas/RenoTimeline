@@ -9,12 +9,13 @@ import QuickActions from '@/components/Dashboard/QuickActions';
 import ProjectsList from '@/components/Projects/ProjectsList';
 import KanbanBoard from '@/components/Kanban/KanbanBoard';
 import TeamOverview from '@/components/Team/TeamOverview';
-import SettingsPanel from '@/components/Settings/SettingsPanel';
+
 import ProjectReportsPage from '@/components/Reports/ProjectReportsPage';
 import TimelineView from '@/components/Timeline/TimelineView';
 import NotificationCenter from '@/components/Notifications/NotificationCenter';
 import FileManager from '@/components/Files/FileManager';
 import UnifiedCalendarView from '@/components/Calendar/UnifiedCalendarView';
+import SettingsPanel from '@/components/Settings/SettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,21 +24,24 @@ import {
   FolderOpen, 
   Kanban, 
   Users, 
-  Settings, 
   LogOut, 
   BarChart3, 
   Bell,
   Folder,
-  Calendar
+  Calendar,
+  Settings,
+  Search
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/ui/GlobalSearch';
 import { useTasks } from '@/hooks/useTasks';
-import TaskDetailsDialog from '@/components/Kanban/TaskDetailsDialog';
+import TaskDetailsDialog from '@/components/Tasks/TaskDetailsDialog';
 import { Toaster } from 'react-hot-toast';
 import { useDashboardDispatch, useDashboardState } from '@/contexts/DashboardContext';
 import EditProjectDialog from '@/components/Projects/EditProjectDialog';
-import { useDummyMode } from '@/hooks/useDummyMode';
+import PageTransition from '@/components/ui/PageTransition';
+import { usePageTransition } from '@/hooks/usePageTransition';
+
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -46,11 +50,30 @@ const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { tasks } = useTasks();
-  const { isDummyMode } = useDummyMode();
+  const { isTransitioning, triggerTransition } = usePageTransition();
+
   
   const state = useDashboardState();
   const dispatch = useDashboardDispatch();
   const { activeTab, selectedTask, editingProject } = state;
+
+  // Handle tab changes - no transitions
+  const handleTabChange = (newTab: string) => {
+    if (newTab !== activeTab) {
+      // Regular tab change without transition
+      dispatch({ type: 'SET_TAB', tab: newTab });
+    }
+  };
+
+  // Trigger transition on page refresh/load
+  useEffect(() => {
+    // Check if this is a page refresh (no previous tab state)
+    if (!activeTab || activeTab === 'dashboard') {
+      triggerTransition(() => {
+        // Transition completed, no additional action needed
+      });
+    }
+  }, []); // Only run on mount
 
   useEffect(() => {
     const { tab, itemId } = location.state || {};
@@ -81,19 +104,41 @@ const Dashboard = () => {
   }, [tasks, location.state, activeTab, navigate, dispatch]);
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({
-      title: 'Wylogowano pomyślnie',
-      description: 'Do zobaczenia!',
-    });
+    try {
+      await signOut();
+      toast({
+        title: 'Wylogowano pomyślnie',
+        description: 'Do zobaczenia!',
+      });
+      
+      // Navigate using React Router instead of window reload
+      navigate('/', { replace: true });
+      
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if logout fails, still redirect and clear state
+      toast({
+        title: 'Wylogowano',
+        description: 'Sesja została wyczyszczona',
+      });
+      
+      navigate('/', { replace: true });
+    }
   };
 
   if (onboardingLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center natural-fade">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg">Sprawdzanie konfiguracji...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-white/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-purple-500 rounded-full animate-spin mx-auto" style={{ animationDelay: '-0.5s' }}></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-pink-500 rounded-full animate-spin mx-auto" style={{ animationDelay: '-1s' }}></div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xl font-semibold text-white">Sprawdzanie konfiguracji...</p>
+            <p className="text-white/60">Przygotowujemy Twoje środowisko pracy</p>
+          </div>
         </div>
       </div>
     );
@@ -109,131 +154,152 @@ const Dashboard = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-background page-transition">
-      {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900/50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold gradient-text">RenoTimeline</h1>
-              <GlobalSearch />
-            </div>
-            {user && (
+    <PageTransition isActive={isTransitioning}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)] animate-pulse-slow"></div>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-bounce"></div>
+            <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl animate-bounce-slow"></div>
+          </div>
+        </div>
+
+        {/* Header */}
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/5 border-b border-white/10 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Logo and Search */}
+              <div className="flex items-center space-x-8">
+                <div className="flex items-center space-x-3">
+                  <img src="/renotimeline-logo.png" alt="RenoTimeline Logo" className="h-8 w-auto" />
+                  <h1 className="text-xl font-bold gradient-text-animated">RenoTimeline</h1>
+                </div>
+                <div className="hidden md:block">
+                  <GlobalSearch />
+                </div>
+              </div>
+
+              {/* User Menu */}
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-400">
-                  Witaj, {user?.user_metadata?.first_name || 'Użytkowniku'}!
-                </span>
-                <Button variant="outline" size="sm" onClick={handleSignOut} className="transition-all duration-300 hover:scale-105">
+                <span className="text-white/80 text-sm">Witaj, {user?.user_metadata?.first_name || 'Użytkowniku'}!</span>
+                <Button
+                  onClick={handleSignOut}
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Wyloguj
                 </Button>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 smooth-entrance">
-          <h2 className="text-3xl font-bold gradient-text mb-2">
-            Dashboard RenoTimeline
-          </h2>
-          <p className="text-gray-400">
-            {isDummyMode
-              ? 'Jesteś w trybie demo. Dane są przykładowe i nie zostaną zapisane.'
-              : 'Zarządzaj swoimi projektami remontowymi.'
-            }
-          </p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={(tab) => dispatch({ type: 'SET_TAB', tab })} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 slide-in-smooth">
-            <TabsTrigger value="dashboard" className="flex items-center space-x-2 tab-transition">
-              <LayoutDashboard className="w-4 h-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="flex items-center space-x-2 tab-transition">
-              <FolderOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Projekty</span>
-            </TabsTrigger>
-            <TabsTrigger value="files" className="flex items-center space-x-2 tab-transition">
-              <Folder className="w-4 h-4" />
-              <span className="hidden sm:inline">Pliki</span>
-            </TabsTrigger>
-            <TabsTrigger value="kanban" className="flex items-center space-x-2 tab-transition">
-              <Kanban className="w-4 h-4" />
-              <span className="hidden sm:inline">Zadania</span>
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center space-x-2 tab-transition">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Kalendarz</span>
-            </TabsTrigger>
-            <TabsTrigger value="team" className="flex items-center space-x-2 tab-transition">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Zespół</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center space-x-2 tab-transition">
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Ustawienia</span>
-            </TabsTrigger>
-             <TabsTrigger value="reports" className="flex items-center space-x-2 tab-transition">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Raporty</span>
-            </TabsTrigger>
-             <TabsTrigger value="notifications" className="flex items-center space-x-2 tab-transition">
-                <Bell className="w-4 h-4" />
-                <span className="hidden sm:inline">Powiadomienia</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6 natural-fade">
-            <div className="stagger-animation">
-              <DashboardStats />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentTasks onTaskSelect={(task) => dispatch({ type: 'SELECT_TASK', task })}/>
-                <QuickActions 
-                  onCreateTask={() => dispatch({ type: 'CREATE_TASK' })}
-                  onCreateProject={() => dispatch({ type: 'CREATE_PROJECT' })}
-                />
-              </div>
             </div>
-          </TabsContent>
+          </div>
+        </header>
 
-          <TabsContent value="projects" className="natural-fade">
-            <ProjectsList onEditProject={(project) => dispatch({ type: 'EDIT_PROJECT', project })} />
-          </TabsContent>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8 animate-fadeIn">
+            <h2 className="text-3xl font-bold text-white mb-3">
+              Dashboard RenoTimeline
+            </h2>
+            <p className="text-white/60 text-lg">
+              Zarządzaj swoimi projektami remontowymi z inteligentnym wsparciem.
+            </p>
+          </div>
 
-          <TabsContent value="files" className="natural-fade">
-            <FileManager />
-          </TabsContent>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
+            <div className="flex justify-center">
+              <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
+                <TabsTrigger value="dashboard" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="projects" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <FolderOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Projekty</span>
+                </TabsTrigger>
+                <TabsTrigger value="files" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <Folder className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pliki</span>
+                </TabsTrigger>
+                <TabsTrigger value="kanban" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <Kanban className="w-4 h-4" />
+                  <span className="hidden sm:inline">Zadania</span>
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Kalendarz</span>
+                </TabsTrigger>
+                <TabsTrigger value="team" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Zespół</span>
+                </TabsTrigger>
+                 <TabsTrigger value="reports" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Raporty</span>
+                </TabsTrigger>
+                 <TabsTrigger value="notifications" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                    <Bell className="w-4 h-4" />
+                    <span className="hidden sm:inline">Powiadomienia</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                    <Settings className="w-4 h-4" />
+                    <span className="hidden sm:inline">Ustawienia</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <TabsContent value="kanban" className="natural-fade">
-            <KanbanBoard onTaskClick={(task) => dispatch({ type: 'SELECT_TASK', task })} />
-          </TabsContent>
+            <TabsContent value="dashboard" className="space-y-8 animate-fadeIn">
+              <div className="stagger-animation">
+                <DashboardStats />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <RecentTasks onTaskSelect={(task) => dispatch({ type: 'SELECT_TASK', task })}/>
+                  <QuickActions 
+                    onCreateTask={() => dispatch({ type: 'CREATE_TASK' })}
+                    onCreateProject={() => dispatch({ type: 'CREATE_PROJECT' })}
+                  />
+                </div>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="calendar" className="natural-fade">
-            <UnifiedCalendarView />
-          </TabsContent>
+            <TabsContent value="projects" className="animate-fadeIn">
+              <ProjectsList onEditProject={(project) => dispatch({ type: 'EDIT_PROJECT', project })} />
+            </TabsContent>
 
-          <TabsContent value="team" className="natural-fade">
-            <TeamOverview />
-          </TabsContent>
+            <TabsContent value="files" className="animate-fadeIn">
+              <FileManager />
+            </TabsContent>
 
-          <TabsContent value="settings" className="natural-fade">
-            <SettingsPanel />
-          </TabsContent>
-          
-           <TabsContent value="reports" className="natural-fade">
-            <ProjectReportsPage />
-          </TabsContent>
-          
-           <TabsContent value="notifications" className="natural-fade">
-            <NotificationCenter />
-          </TabsContent>
+            <TabsContent value="kanban" className="animate-fadeIn">
+              <KanbanBoard onTaskClick={(task) => dispatch({ type: 'SELECT_TASK', task })} />
+            </TabsContent>
 
-        </Tabs>
+            <TabsContent value="calendar" className="animate-fadeIn">
+              <UnifiedCalendarView />
+            </TabsContent>
+
+            <TabsContent value="team" className="animate-fadeIn">
+              <TeamOverview />
+            </TabsContent>
+            
+             <TabsContent value="reports" className="animate-fadeIn">
+              <ProjectReportsPage />
+            </TabsContent>
+            
+             <TabsContent value="notifications" className="animate-fadeIn">
+              <NotificationCenter />
+            </TabsContent>
+            
+            <TabsContent value="settings" className="animate-fadeIn">
+              <SettingsPanel />
+            </TabsContent>
+
+          </Tabs>
+        </main>
       </div>
-    </div>
+    </PageTransition>
     {selectedTask && (
       <TaskDetailsDialog
         task={selectedTask}

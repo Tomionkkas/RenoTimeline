@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/integrations/supabase/client';
+import { renotimelineClient, sharedClient } from '@/integrations/supabase/client';
 import { type Database } from '@/integrations/supabase/database.types';
 import { useAuth } from './useAuth';
 import { toast } from 'react-hot-toast';
 
-export type TeamMember = Database['public']['Tables']['profiles']['Row'];
+export type TeamMember = Database['shared_schema']['Tables']['profiles']['Row'];
 
 export function useTeam() {
   const queryClient = useQueryClient();
@@ -20,33 +20,47 @@ export function useTeam() {
     queryFn: async () => {
       if (!user) return [];
 
-      // Step 1: Get current user's projects
-      const { data: userProjects, error: projectsError } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('owner_id', user.id);
-
-      if (projectsError) throw new Error(projectsError.message);
-
-      const projectIds = userProjects?.map(p => p.id) || [];
-
-      // Step 2: Get all team members assigned to these projects
-      let teamMemberIds: string[] = [user.id]; // Always include current user
+      // For simplicity, this hook will now fetch all users who share a project with the current user.
+      // A more complex implementation might involve a dedicated teams table.
       
-      if (projectIds.length > 0) {
-        const { data: assignments, error: assignmentsError } = await supabase
-          .from('project_assignments')
-          .select('profile_id')
-          .in('project_id', projectIds);
+      // Step 1: Get IDs of all projects the current user is a member of (either owner or assigned)
+      const { data: projectRoles, error: rolesError } = await sharedClient
+        .from('user_roles')
+        .select('project_id')
+        .eq('user_id', user.id)
+        .eq('app_name', 'renotimeline');
 
-        if (assignmentsError) throw new Error(assignmentsError.message);
-        
-        const assignedMemberIds = assignments?.map(a => a.profile_id) || [];
-        teamMemberIds = [...new Set([...teamMemberIds, ...assignedMemberIds])]; // Remove duplicates
+      if (rolesError) throw new Error(rolesError.message);
+
+      const projectIds = projectRoles?.map(p => p.project_id).filter(id => id !== null) || [];
+
+      if (projectIds.length === 0) {
+        // If user has no projects, just return their own profile
+        const { data: ownProfile, error: ownProfileError } = await sharedClient
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id);
+        if (ownProfileError) throw new Error(ownProfileError.message);
+        return ownProfile || [];
       }
 
-      // Step 3: Get profiles for all team member IDs
-      const { data: profiles, error: profilesError } = await supabase
+      // Step 2: Get all user_ids associated with those projects
+      const { data: memberRoles, error: memberRolesError } = await sharedClient
+        .from('user_roles')
+        .select('user_id')
+        .in('project_id', projectIds)
+        .eq('app_name', 'renotimeline');
+      
+      if (memberRolesError) throw new Error(memberRolesError.message);
+      
+      const teamMemberIds = [...new Set(memberRoles?.map(a => a.user_id) || [])];
+
+      if (teamMemberIds.length === 0) {
+          teamMemberIds.push(user.id);
+      }
+
+      // Step 3: Get profiles for all unique member IDs
+      const { data: profiles, error: profilesError } = await sharedClient
         .from('profiles')
         .select('*')
         .in('id', teamMemberIds);
@@ -59,8 +73,10 @@ export function useTeam() {
   });
 
   const { mutateAsync: addTeamMember, isPending: isAdding } = useMutation({
-    mutationFn: async (newMember: Omit<Database['public']['Tables']['profiles']['Insert'], 'id'>) => {
-      const { data, error } = await supabase.from('profiles').insert({ ...newMember, id: uuidv4() }).select().single();
+    mutationFn: async (newMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => {
+      // This is a simplification. In a real app, adding a team member would
+      // likely involve inviting them and setting up their roles, not just creating a profile.
+      const { data, error } = await sharedClient.from('profiles').insert(newMember as any).select().single();
       if (error) {
         throw new Error(error.message);
       }
@@ -73,15 +89,10 @@ export function useTeam() {
   });
 
   const { mutateAsync: updateTeamMember, isPending: isUpdating } = useMutation({
-    mutationFn: async (updatedMember: TeamMember) => {
-      const { data, error } = await supabase
+    mutationFn: async (updatedMember: Partial<TeamMember> & { id: string }) => {
+      const { data, error } = await sharedClient
         .from('profiles')
-        .update({
-          first_name: updatedMember.first_name,
-          last_name: updatedMember.last_name,
-          email: updatedMember.email,
-          expertise: updatedMember.expertise,
-        })
+        .update(updatedMember)
         .eq('id', updatedMember.id)
         .select()
         .single();
@@ -99,11 +110,13 @@ export function useTeam() {
 
   const { mutateAsync: deleteTeamMember, isPending: isDeleting } = useMutation({
     mutationFn: async (memberId: string) => {
-      const { error } = await supabase.from('profiles').delete().eq('id', memberId);
+      // Note: This only deletes the profile. It does not remove them from projects.
+      const { error } = await sharedClient.from('profiles').delete().eq('id', memberId);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      toast.success("Team member deleted!");
     },
   });
 

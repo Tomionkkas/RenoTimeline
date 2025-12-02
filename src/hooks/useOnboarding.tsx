@@ -1,23 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useDummyMode } from './useDummyMode';
 
 export const useOnboarding = () => {
   const { user, loading: authLoading } = useAuth();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { isDummyMode } = useDummyMode();
 
   useEffect(() => {
     if (authLoading) {
       setLoading(true);
-      return;
-    }
-
-    if (isDummyMode) {
-      setNeedsOnboarding(false);
-      setLoading(false);
       return;
     }
 
@@ -27,7 +19,7 @@ export const useOnboarding = () => {
       setNeedsOnboarding(false);
     }
     setLoading(false);
-  }, [user, authLoading, isDummyMode]);
+  }, [user, authLoading]);
 
   const completeOnboarding = async () => {
     if (user) {

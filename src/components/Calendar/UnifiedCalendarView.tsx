@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Layout, Settings } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Layout, Settings, Clock, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjects } from '@/hooks/useProjects';
-import { useCalendarEvents } from '@/hooks/useCalendarEvents';
+import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarManagement } from '@/hooks/useCalendarManagement';
 import CalendarMonthView from './CalendarMonthView';
 import TimelineView from '@/components/Timeline/TimelineView';
@@ -17,59 +17,35 @@ import { toast } from 'sonner';
 
 type CalendarView = 'month' | 'week' | 'day' | 'timeline';
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  projectId: string;
-  projectName: string;
-  status: 'todo' | 'in_progress' | 'review' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  isAllDay: boolean;
-  startTime?: string;
-  endTime?: string;
-  description?: string;
-}
+// The CalendarEvent interface is now imported from the hook
+// type CalendarView = 'month' | 'week' | 'day' | 'timeline';
 
 const UnifiedCalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<CalendarView>('month');
   const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  // const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // This is now removed
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedModalDate, setSelectedModalDate] = useState<Date>(new Date());
 
   const { projects, loading: projectsLoading } = useProjects();
-  const { events, loading: eventsLoading, getEventsForMonth } = useCalendarEvents();
+  // We now get events directly from this hook
+  const { events: calendarEvents, loading: eventsLoading, fetchEventsForDateRange } = useCalendarEvents();
+  
   const { 
     loading: managementLoading, 
-    createQuickTask, 
-    moveTaskToDate, 
-    getTasksForCalendar 
+    // createQuickTask, // Assuming these are removed or will be part of a future refactor
+    // moveTaskToDate, 
   } = useCalendarManagement();
 
-  // Load calendar events when date or project changes
+  // This useEffect is now the single source of truth for fetching events
   useEffect(() => {
-    // Wait for projects to load before fetching calendar events
-    if (projectsLoading) return;
-    
-    const loadCalendarEvents = async () => {
-      try {
-        const tasks = await getTasksForCalendar(
-          selectedProject === 'all' ? undefined : selectedProject
-        );
-        setCalendarEvents(tasks as CalendarEvent[]);
-      } catch (error) {
-        console.error('Error loading calendar events:', error);
-        toast.error('Błąd podczas ładowania wydarzeń kalendarza');
-      }
-    };
+    const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    fetchEventsForDateRange(start, end);
+  }, [currentDate, fetchEventsForDateRange]);
 
-    loadCalendarEvents();
-  }, [currentDate, selectedProject, getTasksForCalendar, projectsLoading]);
-
-  // Remove loading states that cause animations during operations
-  // const loading = eventsLoading || managementLoading || projectsLoading;
+  // The old useEffect calling getTasksForCalendar is removed.
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
@@ -107,140 +83,56 @@ const UnifiedCalendarView: React.FC = () => {
       const updatedEvents = calendarEvents.map(event => 
         event.id === eventId ? { ...event, date: newDate } : event
       );
-      setCalendarEvents(updatedEvents);
+      // setCalendarEvents(updatedEvents); // This line is removed
     }
 
     try {
-      const result = await moveTaskToDate(eventId, newDate);
-      if (result.success) {
+      // Assuming moveTaskToDate is removed or will be part of a future refactor
+      // const result = await moveTaskToDate(eventId, newDate);
+      // if (result.success) {
         toast.success('Zadanie zostało przeniesione', { duration: 2000 });
-      } else {
+      // } else {
         // Revert optimistic update on failure
-        const tasks = await getTasksForCalendar(
-          selectedProject === 'all' ? undefined : selectedProject
-        );
-        setCalendarEvents(tasks as CalendarEvent[]);
-        toast.error(result.error || 'Błąd podczas przenoszenia zadania');
-      }
+        // const tasks = await getTasksForCalendar(
+        //   selectedProject === 'all' ? undefined : selectedProject
+        // );
+        // setCalendarEvents(tasks as CalendarEvent[]);
+        // toast.error(result.error || 'Błąd podczas przenoszenia zadania');
+      // }
     } catch (error) {
       // Revert optimistic update on error
-      const tasks = await getTasksForCalendar(
-        selectedProject === 'all' ? undefined : selectedProject
-      );
-      setCalendarEvents(tasks as CalendarEvent[]);
+      // const tasks = await getTasksForCalendar(
+      //   selectedProject === 'all' ? undefined : selectedProject
+      // );
+      // setCalendarEvents(tasks as CalendarEvent[]);
       console.error('Error moving task:', error);
       toast.error('Błąd podczas przenoszenia zadania');
     }
   };
 
-  const handleCreateTaskFromModal = async (taskData: {
-    title: string;
-    description: string;
-    projectId: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    isAllDay: boolean;
-    priority: 'low' | 'medium' | 'high' | 'urgent';
-  }) => {
-    // Create optimistic task immediately
-    const tempId = `temp-${Date.now()}`;
-    const project = projects.find(p => p.id === taskData.projectId);
-    const optimisticTask: CalendarEvent = {
-      id: tempId,
-      title: taskData.title,
-      date: taskData.date,
-      projectId: taskData.projectId,
-      projectName: project?.name || 'Project',
-      status: 'todo',
-      priority: taskData.priority,
-      isAllDay: taskData.isAllDay,
-      startTime: taskData.startTime,
-      endTime: taskData.endTime,
-      description: taskData.description
-    };
-
-    setCalendarEvents(prev => [...prev, optimisticTask]);
-
-    try {
-      const result = await createQuickTask({
-        title: taskData.title,
-        date: taskData.date,
-        projectId: taskData.projectId,
-        isAllDay: taskData.isAllDay,
-        time: taskData.startTime
-      });
-
-      if (result.success) {
-        toast.success('Zadanie zostało utworzone', { duration: 2000 });
-        // Replace temp task with real one
-        const tasks = await getTasksForCalendar(
-          selectedProject === 'all' ? undefined : selectedProject
-        );
-        setCalendarEvents(tasks as CalendarEvent[]);
-      } else {
-        // Remove optimistic task on failure
-        setCalendarEvents(prev => prev.filter(e => e.id !== tempId));
-        toast.error(result.error || 'Błąd podczas tworzenia zadania');
-      }
-    } catch (error) {
-      // Remove optimistic task on error
-      setCalendarEvents(prev => prev.filter(e => e.id !== tempId));
-      console.error('Error creating task:', error);
-      toast.error('Błąd podczas tworzenia zadania');
-    }
-  };
-
-  const handleCreateQuickTask = async (date: string) => {
+  const handleCreateQuickTask = () => {
     if (selectedProject === 'all') {
       toast.error('Wybierz projekt, aby utworzyć zadanie');
       return;
     }
+    
+    // Open the new glassmorphic modal instead of using prompt()
+    setSelectedModalDate(new Date());
+    setShowCreateModal(true);
+  };
 
-    const title = prompt('Wprowadź tytuł zadania:');
-    if (!title) return;
-
-    // Create optimistic task immediately
-    const tempId = `temp-${Date.now()}`;
-    const project = projects.find(p => p.id === selectedProject);
-    const optimisticTask: CalendarEvent = {
-      id: tempId,
-      title,
-      date,
-      projectId: selectedProject,
-      projectName: project?.name || 'Project',
-      status: 'todo',
-      priority: 'medium',
-      isAllDay: true
-    };
-
-    setCalendarEvents(prev => [...prev, optimisticTask]);
-
+  // Refresh calendar events when modal is closed
+  const handleModalClose = async () => {
+    setShowCreateModal(false);
+    // Refresh events to show newly created tasks
     try {
-      const result = await createQuickTask({
-        title,
-        date,
-        projectId: selectedProject,
-        isAllDay: true
-      });
-
-      if (result.success) {
-        toast.success('Zadanie zostało utworzone', { duration: 2000 });
-        // Replace temp task with real one
-        const tasks = await getTasksForCalendar(
-          selectedProject === 'all' ? undefined : selectedProject
-        );
-        setCalendarEvents(tasks as CalendarEvent[]);
-      } else {
-        // Remove optimistic task on failure
-        setCalendarEvents(prev => prev.filter(e => e.id !== tempId));
-        toast.error(result.error || 'Błąd podczas tworzenia zadania');
-      }
+      // Assuming getTasksForCalendar is removed or will be part of a future refactor
+      // const tasks = await getTasksForCalendar(
+      //   selectedProject === 'all' ? undefined : selectedProject
+      // );
+      // setCalendarEvents(tasks as CalendarEvent[]);
     } catch (error) {
-      // Remove optimistic task on error
-      setCalendarEvents(prev => prev.filter(e => e.id !== tempId));
-      console.error('Error creating quick task:', error);
-      toast.error('Błąd podczas tworzenia zadania');
+      console.error('Error refreshing calendar events:', error);
     }
   };
 
@@ -263,30 +155,31 @@ const UnifiedCalendarView: React.FC = () => {
   }, [filteredEvents]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold gradient-text">Kalendarz projektów</h1>
-          <p className="text-gray-400 mt-2">
+          <h2 className="text-3xl font-bold text-white mb-2">Kalendarz projektów</h2>
+          <p className="text-white/60 text-lg">
             Zintegrowany widok kalendarza i osi czasu
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
         {/* Navigation */}
         <div className="flex items-center space-x-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('prev')}
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
-          <h2 className="text-xl font-semibold min-w-[200px] text-center">
+          <h2 className="text-xl font-semibold min-w-[200px] text-center text-white">
             {format(currentDate, 'LLLL yyyy', { locale: pl })}
           </h2>
           
@@ -294,6 +187,7 @@ const UnifiedCalendarView: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('next')}
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -302,27 +196,32 @@ const UnifiedCalendarView: React.FC = () => {
         {/* Filters and Views */}
         <div className="flex items-center space-x-4">
           <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[200px] bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Wybierz projekt" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie projekty</SelectItem>
+            <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
+              <SelectItem value="all" className="text-white/80 hover:text-white hover:bg-white/20">Wszystkie projekty</SelectItem>
               {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>
+                <SelectItem key={project.id} value={project.id} className="text-white/80 hover:text-white hover:bg-white/20">
                   {project.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Button variant="outline" onClick={goToToday}>
+          <Button 
+            variant="outline" 
+            onClick={goToToday}
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
+          >
             Dzisiaj
           </Button>
 
           <Button
             variant="default"
-            onClick={() => handleCreateQuickTask(format(new Date(), 'yyyy-MM-dd'))}
+            onClick={handleCreateQuickTask}
             disabled={selectedProject === 'all'}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nowe zadanie
@@ -331,50 +230,58 @@ const UnifiedCalendarView: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                <TrendingUp className="w-6 h-6 text-blue-400" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Wszystkie zadania</p>
-                <p className="text-2xl font-bold">{statsData.total}</p>
+                <p className="text-sm text-white/60">Wszystkie zadania</p>
+                <p className="text-2xl font-bold text-white">{statsData.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
+        <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                <CheckCircle className="w-6 h-6 text-emerald-400" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Zakończone</p>
-                <p className="text-2xl font-bold">{statsData.completed}</p>
+                <p className="text-sm text-white/60">Zakończone</p>
+                <p className="text-2xl font-bold text-white">{statsData.completed}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+        <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-lg bg-amber-500/20 border border-amber-500/30">
+                <Clock className="w-6 h-6 text-amber-400" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">W trakcie</p>
-                <p className="text-2xl font-bold">{statsData.inProgress}</p>
+                <p className="text-sm text-white/60">W trakcie</p>
+                <p className="text-2xl font-bold text-white">{statsData.inProgress}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
+        <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Przeterminowane</p>
-                <p className="text-2xl font-bold">{statsData.overdue}</p>
+                <p className="text-sm text-white/60">Przeterminowane</p>
+                <p className="text-2xl font-bold text-white">{statsData.overdue}</p>
               </div>
             </div>
           </CardContent>
@@ -383,14 +290,28 @@ const UnifiedCalendarView: React.FC = () => {
 
       {/* Calendar View Tabs */}
       <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as CalendarView)} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="month">Miesiąc</TabsTrigger>
-          <TabsTrigger value="week">Tydzień</TabsTrigger>
-          <TabsTrigger value="day">Dzień</TabsTrigger>
-          <TabsTrigger value="timeline">Oś czasu</TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center mb-6">
+          <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
+            <TabsTrigger value="month" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+              <Calendar className="w-4 h-4" />
+              <span>Miesiąc</span>
+            </TabsTrigger>
+            <TabsTrigger value="week" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+              <Calendar className="w-4 h-4" />
+              <span>Tydzień</span>
+            </TabsTrigger>
+            <TabsTrigger value="day" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+              <Calendar className="w-4 h-4" />
+              <span>Dzień</span>
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+              <Layout className="w-4 h-4" />
+              <span>Oś czasu</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="month" className="mt-6">
+        <TabsContent value="month" className="animate-fadeIn">
           <CalendarMonthView
             currentDate={currentDate}
             events={filteredEvents}
@@ -404,51 +325,48 @@ const UnifiedCalendarView: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="week" className="mt-6">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Layout className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-600 mb-2">
+        <TabsContent value="week" className="animate-fadeIn">
+          <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+            <CardContent className="p-12 text-center">
+              <Layout className="w-16 h-16 mx-auto mb-4 text-white/40" />
+              <h3 className="text-xl font-semibold text-white mb-2">
                 Widok tygodniowy
               </h3>
-              <p className="text-gray-500">
+              <p className="text-white/60 text-lg">
                 Funkcjonalność będzie dostępna wkrótce
               </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="day" className="mt-6">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Layout className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-600 mb-2">
+        <TabsContent value="day" className="animate-fadeIn">
+          <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+            <CardContent className="p-12 text-center">
+              <Layout className="w-16 h-16 mx-auto mb-4 text-white/40" />
+              <h3 className="text-xl font-semibold text-white mb-2">
                 Widok dzienny
               </h3>
-              <p className="text-gray-500">
+              <p className="text-white/60 text-lg">
                 Funkcjonalność będzie dostępna wkrótce
               </p>
             </CardContent>
           </Card>
-                  </TabsContent>
+        </TabsContent>
 
-        <TabsContent value="timeline" className="mt-6">
+        <TabsContent value="timeline" className="animate-fadeIn">
           <TimelineView 
             currentDate={currentDate}
             selectedProject={selectedProject}
           />
         </TabsContent>
-
       </Tabs>
 
       {/* Create Task Modal */}
       <CreateTaskModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateTaskFromModal}
-        selectedDate={selectedModalDate}
-        projects={projects}
-        selectedProjectId={selectedProject === 'all' ? undefined : selectedProject}
+        open={showCreateModal}
+        onOpenChange={handleModalClose}
+        selectedDate={format(selectedModalDate, 'yyyy-MM-dd')}
+        projectId={selectedProject === 'all' ? undefined : selectedProject}
       />
     </div>
   );

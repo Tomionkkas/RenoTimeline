@@ -200,29 +200,149 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     ],
     variables: [
       {
-        key: 'skill_tags',
-        label: 'Tagi umiejętności do uwzględnienia',
-        type: 'text',
-        required: true,
-        default: 'frontend,backend,design,testing'
-      },
-      {
-        key: 'workload_balance',
-        label: 'Uwzględniać równowagę obciążenia',
+        key: 'auto_assignment_enabled',
+        label: 'Włącz automatyczne przypisywanie',
         type: 'select',
         required: false,
-        options: ['true', 'false'],
-        default: 'true'
+        options: ['Tak, automatycznie przypisuj', 'Nie, tylko powiadamiaj'],
+        default: 'Tak, automatycznie przypisuj'
       },
       {
-        key: 'fallback_user',
-        label: 'Użytkownik fallback (gdy brak dopasowania)',
-        type: 'user',
-        required: false
+        key: 'skill_matching',
+        label: 'Sposób dopasowania umiejętności',
+        type: 'select',
+        required: false,
+        options: ['Najlepsze dopasowanie', 'Pierwszy dostępny', 'Równomierne obciążenie'],
+        default: 'Najlepsze dopasowanie'
       }
     ],
-    tags: ['assignment', 'skills', 'automation'],
+    tags: ['automation', 'assignment', 'skills'],
     estimated_time_saved: '45 min/week'
+  },
+
+  {
+    id: 'daily-progress-report',
+    name: 'Daily Progress Report',
+    description: 'Automatycznie generuj raport postępu projektu każdego dnia i wysyłaj do managera',
+    category: 'reporting',
+    icon: '📊',
+    popularity: 84,
+    trigger_type: 'scheduled',
+    trigger_config: {
+      schedule_type: 'daily',
+      execution_time: '17:00'
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_email',
+        config: {
+          recipient_email: '{{manager_email}}',
+          subject: 'Dzienny raport postępu - {{project.name}} - {{current_date}}',
+          message: 'Raport postępu projektu {{project.name}} na dzień {{current_date}}:\n\n' +
+                   '• Zadania ukończone dzisiaj: {{tasks_completed_today}}\n' +
+                   '• Zadania w trakcie: {{tasks_in_progress}}\n' +
+                   '• Postęp ogólny: {{project.completion_percentage}}%\n\n' +
+                   'Pozdrawienia,\nSystem RenoTimeline'
+        }
+      },
+      {
+        type: 'create_task',
+        config: {
+          title: 'Przegląd postępu - {{current_date}}',
+          description: 'Przegląd dziennego postępu projektu',
+          priority: 'low'
+        }
+      }
+    ],
+    variables: [
+      {
+        key: 'manager_email',
+        label: 'Email managera projektu',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'report_frequency',
+        label: 'Częstotliwość raportów',
+        type: 'select',
+        required: false,
+        options: ['Codziennie', 'Co drugi dzień', 'Co tydzień'],
+        default: 'Codziennie'
+      },
+      {
+        key: 'include_details',
+        label: 'Dołącz szczegóły zadań',
+        type: 'select',
+        required: false,
+        options: ['Tak, pełne szczegóły', 'Tylko podsumowanie'],
+        default: 'Tylko podsumowanie'
+      }
+    ],
+    tags: ['reporting', 'management', 'scheduled'],
+    estimated_time_saved: '2 hours/week'
+  },
+
+  {
+    id: 'overdue-task-escalation',
+    name: 'Overdue Task Escalation',
+    description: 'Automatycznie eskaluj przeterminowane zadania do managera po określonym czasie',
+    category: 'escalation',
+    icon: '⚠️',
+    popularity: 91,
+    trigger_type: 'scheduled',
+    trigger_config: {
+      schedule_type: 'daily',
+      execution_time: '10:00'
+    },
+    conditions: {
+      status: ['todo', 'in_progress'],
+      overdue: true
+    },
+    actions: [
+      {
+        type: 'send_notification',
+        config: {
+          recipient_id: '{{project.manager_id}}',
+          message: 'Zadanie "{{task.title}}" jest przeterminowane o {{overdue_days}} dni. Przypisane do: {{task.assigned_to_name}}',
+          notification_type: 'escalation',
+          priority: 'high'
+        }
+      },
+      {
+        type: 'update_task',
+        config: {
+          priority: 'urgent'
+        }
+      },
+      {
+        type: 'add_comment',
+        config: {
+          comment: 'UWAGA: To zadanie zostało automatycznie eskalowane z powodu przekroczenia terminu o {{overdue_days}} dni.',
+          is_system_comment: true
+        }
+      }
+    ],
+    variables: [
+      {
+        key: 'escalation_days',
+        label: 'Eskaluj po ilu dniach opóźnienia',
+        type: 'select',
+        required: true,
+        options: ['1', '2', '3', '7'],
+        default: '2'
+      },
+      {
+        key: 'auto_priority_change',
+        label: 'Automatycznie zmień priorytet na pilny',
+        type: 'select',
+        required: false,
+        options: ['Tak, zmień priorytet', 'Nie, zostaw bez zmian'],
+        default: 'Tak, zmień priorytet'
+      }
+    ],
+    tags: ['escalation', 'deadlines', 'management'],
+    estimated_time_saved: '1.5 hours/week'
   },
 
   {

@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useCustomFieldDefinitions, type CustomFieldDefinition, type FieldType, type CreateFieldDefinitionData } from '@/hooks/useCustomFieldDefinitions';
-import { useCustomFieldValidation } from '@/hooks/useCustomFieldValidation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,16 +17,11 @@ import { Plus, Edit, Trash, GripVertical, Search, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const FIELD_TYPE_OPTIONS = [
-  { value: 'text', label: 'Tekst', description: 'Krótkie pole tekstowe' },
-  { value: 'textarea', label: 'Tekst wieloliniowy', description: 'Długie pole tekstowe' },
-  { value: 'number', label: 'Liczba', description: 'Wartości numeryczne' },
-  { value: 'email', label: 'Email', description: 'Adresy email z walidacją' },
-  { value: 'url', label: 'URL', description: 'Linki internetowe' },
-  { value: 'date', label: 'Data', description: 'Wybór daty' },
-  { value: 'datetime', label: 'Data i czas', description: 'Wybór daty i czasu' },
-  { value: 'boolean', label: 'Tak/Nie', description: 'Wartość logiczna' },
-  { value: 'select', label: 'Lista wyboru', description: 'Jedna opcja z listy' },
-  { value: 'multi_select', label: 'Wielokrotny wybór', description: 'Wiele opcji z listy' }
+  { value: 'text', label: 'Text', description: 'Short text field' },
+  { value: 'number', label: 'Number', description: 'Numerical values' },
+  { value: 'date', label: 'Date', description: 'Date picker' },
+  { value: 'select', label: 'Select', description: 'Single option from a list' },
+  { value: 'checkbox', label: 'Checkbox', description: 'Boolean true/false' }
 ];
 
 interface DraggableFieldItemProps {
@@ -161,21 +155,21 @@ const FieldForm: React.FC<FieldFormProps> = ({ field, entityType, projectId, onS
     const validationErrors: string[] = [];
 
     if (!formData.name.trim()) {
-      validationErrors.push('Nazwa pola jest wymagana');
+      validationErrors.push('Field name is required');
     }
 
     if (formData.name.length > 100) {
-      validationErrors.push('Nazwa pola może mieć maksymalnie 100 znaków');
+      validationErrors.push('Field name can have a maximum of 100 characters');
     }
 
-    if ((formData.field_type === 'select' || formData.field_type === 'multi_select') && !formData.options.trim()) {
-      validationErrors.push('Opcje są wymagane dla pól wyboru');
+    if (formData.field_type === 'select' && !formData.options.trim()) {
+      validationErrors.push('Options are required for select fields');
     }
 
     if (formData.options) {
       const optionLines = formData.options.split('\n').filter(line => line.trim());
       if (optionLines.length > 50) {
-        validationErrors.push('Maksymalnie 50 opcji jest dozwolonych');
+        validationErrors.push('A maximum of 50 options is allowed');
       }
     }
 
@@ -187,15 +181,13 @@ const FieldForm: React.FC<FieldFormProps> = ({ field, entityType, projectId, onS
         : [];
 
       onSave({
+        project_id: projectId,
+        entity_type: entityType,
         name: formData.name.trim(),
         field_type: formData.field_type,
         is_required: formData.is_required,
-        options: (formData.field_type === 'select' || formData.field_type === 'multi_select') 
-          ? processedOptions 
-          : null,
-        default_value: formData.default_value || null,
-        entity_type: entityType,
-        project_id: projectId
+        options: formData.field_type === 'select' ? processedOptions : null,
+        default_value: formData.default_value || undefined,
       });
     }
   }, [formData, entityType, projectId, onSave]);
@@ -216,18 +208,18 @@ const FieldForm: React.FC<FieldFormProps> = ({ field, entityType, projectId, onS
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="field-name">Nazwa pola *</Label>
+        <Label htmlFor="field-name">Field Name *</Label>
         <Input
           id="field-name"
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Np. Kontakt z klientem"
+          placeholder="e.g., Contact with Client"
           maxLength={100}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="field-type">Typ pola *</Label>
+        <Label htmlFor="field-type">Field Type *</Label>
         <Select value={formData.field_type} onValueChange={(value) => setFormData(prev => ({ ...prev, field_type: value as FieldType }))}>
           <SelectTrigger>
             <SelectValue />
@@ -250,27 +242,27 @@ const FieldForm: React.FC<FieldFormProps> = ({ field, entityType, projectId, onS
 
       {needsOptions && (
         <div className="space-y-2">
-          <Label htmlFor="field-options">Opcje *</Label>
+          <Label htmlFor="field-options">Options *</Label>
           <Textarea
             id="field-options"
             value={formData.options}
             onChange={(e) => setFormData(prev => ({ ...prev, options: e.target.value }))}
-            placeholder="Jedna opcja na linię&#10;Opcja 1&#10;Opcja 2&#10;Opcja 3"
+            placeholder="One option per line&#10;Option 1&#10;Option 2&#10;Option 3"
             rows={6}
           />
           <p className="text-xs text-gray-500">
-            Każda opcja w nowej linii. Maksymalnie 50 opcji.
+            Each option on a new line. Maximum 50 options.
           </p>
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="default-value">Wartość domyślna</Label>
+        <Label htmlFor="default-value">Default Value</Label>
         <Input
           id="default-value"
           value={formData.default_value}
           onChange={(e) => setFormData(prev => ({ ...prev, default_value: e.target.value }))}
-          placeholder="Opcjonalna wartość domyślna"
+          placeholder="Optional default value"
         />
       </div>
 
@@ -280,15 +272,15 @@ const FieldForm: React.FC<FieldFormProps> = ({ field, entityType, projectId, onS
           checked={formData.is_required}
           onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_required: !!checked }))}
         />
-        <Label htmlFor="is-required">To pole jest wymagane</Label>
+        <Label htmlFor="is-required">This field is required</Label>
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button variant="outline" onClick={onCancel}>
-          Anuluj
+          Cancel
         </Button>
         <Button onClick={handleSave}>
-          {field ? 'Zapisz zmiany' : 'Utwórz pole'}
+          {field ? 'Save Changes' : 'Create Field'}
         </Button>
       </div>
     </div>
@@ -306,7 +298,8 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
     loading, 
     createDefinition, 
     updateDefinition, 
-    deleteDefinition
+    deleteDefinition,
+    reorderDefinitions // Assuming this is now implemented in the hook
   } = useCustomFieldDefinitions(projectId, entityType);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -328,24 +321,32 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
   }, [definitions, searchTerm, filterType, showOnlyRequired]);
 
   const handleMoveField = useCallback(async (dragIndex: number, hoverIndex: number) => {
-    // Simple reordering - in a full implementation, you'd call reorderDefinitions
-    const draggedField = filteredDefinitions[dragIndex];
-    const hoveredField = filteredDefinitions[hoverIndex];
+    const newDefinitions = [...definitions];
+    const [draggedItem] = newDefinitions.splice(dragIndex, 1);
+    newDefinitions.splice(hoverIndex, 0, draggedItem);
     
-    if (!draggedField || !hoveredField) return;
-
-    // For now, just show a toast
-    toast.success('Drag and drop reordering coming soon!');
-  }, [filteredDefinitions]);
+    // Optimistically update the UI
+    // Note: The hook doesn't return a setter for definitions directly,
+    // so this is a simplification. A real implementation might need one,
+    // or rely on the `reorderDefinitions` function to refetch.
+    
+    const success = await reorderDefinitions(newDefinitions);
+    if (success) {
+      toast.success('Field order updated!');
+    } else {
+      toast.error('Failed to update field order.');
+      // Optionally revert optimistic update here
+    }
+  }, [definitions, reorderDefinitions]);
 
   const handleCreateField = useCallback(async (fieldData: CreateFieldDefinitionData) => {
     try {
       await createDefinition(fieldData);
       setIsCreateDialogOpen(false);
-      toast.success('Pole zostało utworzone');
+      toast.success('Field created');
     } catch (error) {
       console.error('Error creating field:', error);
-      toast.error('Błąd podczas tworzenia pola');
+      toast.error('Error creating field');
     }
   }, [createDefinition]);
 
@@ -355,27 +356,27 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
     try {
       await updateDefinition(editingField.id, fieldData);
       setEditingField(null);
-      toast.success('Pole zostało zaktualizowane');
+      toast.success('Field updated');
     } catch (error) {
       console.error('Error updating field:', error);
-      toast.error('Błąd podczas aktualizacji pola');
+      toast.error('Error updating field');
     }
   }, [editingField, updateDefinition]);
 
   const handleDeleteField = useCallback(async (field: CustomFieldDefinition) => {
     try {
       await deleteDefinition(field.id);
-      toast.success('Pole zostało usunięte');
+      toast.success('Field deleted');
     } catch (error) {
       console.error('Error deleting field:', error);
-      toast.error('Błąd podczas usuwania pola');
+      toast.error('Error deleting field');
     }
   }, [deleteDefinition]);
 
   const handleDuplicateField = useCallback(async (field: CustomFieldDefinition) => {
     try {
       const duplicatedField: CreateFieldDefinitionData = {
-        name: `${field.name} (kopia)`,
+        name: `${field.name} (copy)`,
         field_type: field.field_type,
         is_required: field.is_required,
         options: field.options,
@@ -385,10 +386,10 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
       };
       
       await createDefinition(duplicatedField);
-      toast.success('Pole zostało zduplikowane');
+      toast.success('Field duplicated');
     } catch (error) {
       console.error('Error duplicating field:', error);
-      toast.error('Błąd podczas duplikowania pola');
+      toast.error('Error duplicating field');
     }
   }, [createDefinition]);
 
@@ -400,10 +401,10 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
         Array.from(bulkSelectedFields).map(fieldId => deleteDefinition(fieldId))
       );
       setBulkSelectedFields(new Set());
-      toast.success(`Usunięto ${bulkSelectedFields.size} pól`);
+      toast.success(`Deleted ${bulkSelectedFields.size} fields`);
     } catch (error) {
       console.error('Error bulk deleting fields:', error);
-      toast.error('Błąd podczas usuwania pól');
+      toast.error('Error bulk deleting fields');
     }
   }, [bulkSelectedFields, deleteDefinition]);
 
@@ -411,7 +412,7 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Ładowanie...</CardTitle>
+          <CardTitle>Loading...</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -431,24 +432,24 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>
-                Pola niestandardowe - {entityType === 'task' ? 'Zadania' : 'Projekty'}
+                Custom Fields - {entityType === 'task' ? 'Tasks' : 'Projects'}
               </CardTitle>
               <CardDescription>
-                Zarządzaj polami niestandardowymi dla {entityType === 'task' ? 'zadań' : 'projektów'}
+                Manage custom fields for {entityType === 'task' ? 'tasks' : 'projects'}
               </CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Dodaj pole
+                  Add Field
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Nowe pole niestandardowe</DialogTitle>
+                  <DialogTitle>New Custom Field</DialogTitle>
                   <DialogDescription>
-                    Utwórz nowe pole niestandardowe dla {entityType === 'task' ? 'zadań' : 'projektów'}
+                    Create a new custom field for {entityType === 'task' ? 'tasks' : 'projects'}
                   </DialogDescription>
                 </DialogHeader>
                 <FieldForm
@@ -466,7 +467,7 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Szukaj pól..."
+                placeholder="Search fields..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -474,10 +475,10 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filtruj typ" />
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Wszystkie typy</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 {FIELD_TYPE_OPTIONS.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -492,7 +493,7 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
                 id="show-required"
               />
               <Label htmlFor="show-required" className="text-sm">
-                Tylko wymagane
+                Only Required
               </Label>
             </div>
           </div>
@@ -501,7 +502,7 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
           {bulkSelectedFields.size > 0 && (
             <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-md p-3 mt-4">
               <span className="text-sm text-blue-800">
-                Zaznaczono {bulkSelectedFields.size} pól
+                Selected {bulkSelectedFields.size} fields
               </span>
               <div className="flex items-center space-x-2">
                 <Button 
@@ -509,26 +510,26 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
                   size="sm"
                   onClick={() => setBulkSelectedFields(new Set())}
                 >
-                  Odznacz wszystkie
+                  Deselect All
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      Usuń zaznaczone
+                      Delete Selected
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Usuń zaznaczone pola</AlertDialogTitle>
+                      <AlertDialogTitle>Delete Selected Fields</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Czy na pewno chcesz usunąć {bulkSelectedFields.size} zaznaczonych pól? 
-                        Wszystkie dane w tych polach zostaną utracone.
+                        Are you sure you want to delete {bulkSelectedFields.size} selected fields? 
+                        All data in these fields will be lost.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction onClick={handleBulkDelete}>
-                        Usuń wszystkie
+                        Delete All
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -543,14 +544,14 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">
                 {definitions.length === 0 
-                  ? `Nie ma jeszcze żadnych pól dla ${entityType === 'task' ? 'zadań' : 'projektów'}`
-                  : 'Nie znaleziono pól pasujących do filtrów'
+                  ? `No custom fields yet for ${entityType === 'task' ? 'tasks' : 'projects'}`
+                  : 'No fields found matching filters'
                 }
               </div>
               {definitions.length === 0 && (
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Utwórz pierwsze pole
+                  Create First Field
                 </Button>
               )}
             </div>
@@ -591,9 +592,9 @@ export const CustomFieldDefinitionManager: React.FC<Props> = ({ entityType, proj
           <Dialog open={!!editingField} onOpenChange={(open) => !open && setEditingField(null)}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Edytuj pole</DialogTitle>
+                <DialogTitle>Edit Field</DialogTitle>
                 <DialogDescription>
-                  Modyfikuj właściwości pola niestandardowego
+                  Modify custom field properties
                 </DialogDescription>
               </DialogHeader>
               {editingField && (

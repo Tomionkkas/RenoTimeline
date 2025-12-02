@@ -62,13 +62,13 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
       updateCacheStats();
       
       toast({
-        title: '⏰ Przepływy zaplanowane',
+        title: 'Przepływy zaplanowane',
         description: 'Pomyślnie sprawdzono i wykonano zaplanowane przepływy',
       });
     } catch (error) {
       console.error('Error running scheduled workflows:', error);
       toast({
-        title: '❌ Błąd',
+        title: 'Błąd',
         description: 'Wystąpił błąd podczas wykonywania zaplanowanych przepływów',
         variant: 'destructive',
       });
@@ -85,13 +85,13 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
       updateCacheStats();
       
       toast({
-        title: '📅 Przepływy terminów',
+        title: 'Przepływy terminów',
         description: 'Pomyślnie sprawdzono zadania z zbliżającymi się terminami',
       });
     } catch (error) {
       console.error('Error running due date workflows:', error);
       toast({
-        title: '❌ Błąd',
+        title: 'Błąd',
         description: 'Wystąpił błąd podczas sprawdzania terminów zadań',
         variant: 'destructive',
       });
@@ -104,7 +104,7 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
     ScheduledWorkflowManager.clearCache();
     updateCacheStats();
     toast({
-      title: '🗑️ Cache wyczyszczony',
+      title: 'Cache wyczyszczony',
       description: 'Cache przepływów został wyczyszczony',
     });
   };
@@ -185,7 +185,7 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
           <Clock className="h-16 w-16 text-orange-400" />
         </div>
         <h2 className="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
-          ⏰ Zarządzanie Zaplanowanymi Przepływami
+          Zarządzanie Zaplanowanymi Przepływami
         </h2>
         <p className="text-gray-300 text-lg max-w-2xl mx-auto">
           Monitorowanie i testowanie automatyzacji czasowych
@@ -301,7 +301,7 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
                   <div className="p-6 bg-orange-800/30 rounded-full mb-6 mx-auto w-fit">
                     <Clock className="h-16 w-16 text-orange-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">⏰ Brak zaplanowanych przepływów</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4">Brak zaplanowanych przepływów</h3>
                   <p className="text-gray-300 text-lg">Nie masz jeszcze żadnych przepływów zaplanowanych czasowo</p>
                 </CardContent>
               </Card>
@@ -375,7 +375,7 @@ const ScheduledWorkflowManagerComponent: React.FC<ScheduledWorkflowManagerProps>
                   <div className="p-6 bg-red-800/30 rounded-full mb-6 mx-auto w-fit">
                     <Calendar className="h-16 w-16 text-red-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">📅 Brak przepływów dla terminów</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4">Brak przepływów dla terminów</h3>
                   <p className="text-gray-300 text-lg">Nie masz jeszcze żadnych przepływów reagujących na terminy zadań</p>
                 </CardContent>
               </Card>

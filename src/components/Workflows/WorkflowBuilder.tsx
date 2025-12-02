@@ -93,12 +93,12 @@ export function WorkflowBuilder({ projectId, workflow, onClose }: WorkflowBuilde
       if (workflow?.id) {
         await updateWorkflow(workflow.id, workflowData);
       } else {
-        console.log('🚀 WorkflowBuilder - Creating workflow...');
+        console.log('WorkflowBuilder - Creating workflow...');
         await createWorkflow(workflowData as any);
-        console.log('🚀 WorkflowBuilder - Workflow created successfully');
+        console.log('WorkflowBuilder - Workflow created successfully');
       }
 
-      console.log('🚀 WorkflowBuilder - Closing builder...');
+              console.log('WorkflowBuilder - Closing builder...');
       onClose();
     } catch (error) {
       console.error('Error saving workflow:', error);

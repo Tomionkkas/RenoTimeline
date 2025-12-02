@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useProjects } from './useProjects';
 import { useTasks } from './useTasks';
 import { Project } from './useProjects';
@@ -12,13 +12,11 @@ export interface SearchResult {
 export const useGlobalSearch = (query: string) => {
   const { projects } = useProjects();
   const { tasks } = useTasks();
-  const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const results = useMemo(() => {
     if (query.trim() === '') {
-      setResults([]);
-      return;
+      return [];
     }
 
     setLoading(true);
@@ -33,8 +31,8 @@ export const useGlobalSearch = (query: string) => {
       .filter(task => task.title.toLowerCase().includes(lowerCaseQuery))
       .map(task => ({ type: 'task', item: task }));
 
-    setResults([...projectResults, ...taskResults]);
     setLoading(false);
+    return [...projectResults, ...taskResults];
   }, [query, projects, tasks]);
 
   return { results, loading };

@@ -12,8 +12,9 @@ const DashboardStats = () => {
       value: loading ? '...' : stats.completedTasks.toString(),
       change: stats.completedTasksChange,
       icon: CheckCircle,
-      color: 'text-green-400',
-      bgColor: 'bg-green-400/10',
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+      progressColor: 'from-emerald-500 to-emerald-600',
       showBreakdown: false
     },
     {
@@ -22,7 +23,8 @@ const DashboardStats = () => {
       change: stats.activeTasksChange,
       icon: Clock,
       color: 'text-blue-400',
-      bgColor: 'bg-blue-400/10',
+      bgColor: 'bg-blue-500/10',
+      progressColor: 'from-emerald-500 to-emerald-600',
       showBreakdown: false
     },
     {
@@ -31,7 +33,8 @@ const DashboardStats = () => {
       change: stats.projectsChange,
       icon: Users,
       color: 'text-purple-400',
-      bgColor: 'bg-purple-400/10',
+      bgColor: 'bg-purple-500/10',
+      progressColor: 'from-emerald-500 to-emerald-600',
       showBreakdown: false
     },
     {
@@ -39,19 +42,20 @@ const DashboardStats = () => {
       value: loading ? '...' : `${stats.productivity}%`,
       change: stats.productivityChange,
       icon: TrendingUp,
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-400/10',
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
+      progressColor: 'from-emerald-500 to-emerald-600',
       showBreakdown: true
     },
   ];
 
   const getChangeColor = (change: string) => {
     if (change.startsWith('+') && change !== '+0' && change !== '+0%') {
-      return 'text-green-400';
+      return 'text-emerald-400';
     } else if (change.startsWith('-')) {
       return 'text-red-400';
     } else {
-      return 'text-gray-400';
+      return 'text-white/60';
     }
   };
 
@@ -60,39 +64,78 @@ const DashboardStats = () => {
       {statsConfig.map((stat, index) => {
         const Icon = stat.icon;
         const changeColor = getChangeColor(stat.change);
+        const progressPercentage = stat.title === 'Produktywność' ? stats.productivity : 
+          stat.title === 'Ukończone zadania' ? Math.min((stats.completedTasks / Math.max(stats.completedTasks + stats.activeTasks, 1)) * 100, 100) :
+          stat.title === 'Zadania w toku' ? Math.min((stats.activeTasks / Math.max(stats.completedTasks + stats.activeTasks, 1)) * 100, 100) :
+          stat.title === 'Aktywne projekty' ? Math.min((stats.totalProjects / Math.max(stats.totalProjects, 1)) * 100, 100) : 0;
         
         return (
           <div
             key={index}
-            className="bg-card p-6 rounded-xl border border-gray-800 card-hover animate-fade-in relative group"
+            className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in relative group overflow-hidden"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                <Icon className={`w-6 h-6 ${stat.color}`} />
+            {/* Subtle background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div className={`p-3 rounded-lg ${stat.bgColor} backdrop-blur-sm border border-white/10`}>
+                  <Icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${changeColor} bg-white/10 px-2 py-1 rounded-md backdrop-blur-sm`}>
+                    {stat.change}
+                  </span>
+                  {stat.showBreakdown && stats.productivityMetrics && (
+                    <ProductivityBreakdown 
+                      productivity={stats.productivity}
+                      metrics={stats.productivityMetrics}
+                      trigger={
+                        <button className="p-2 rounded-md hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100 backdrop-blur-sm">
+                          <Info className="w-4 h-4 text-white/70 hover:text-white" />
+                        </button>
+                      }
+                    />
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium ${changeColor}`}>
-                  {stat.change}
-                </span>
-                {stat.showBreakdown && stats.productivityMetrics && (
-                  <ProductivityBreakdown 
-                    productivity={stats.productivity}
-                    metrics={stats.productivityMetrics}
-                    trigger={
-                      <button className="p-1 rounded-full hover:bg-gray-700/50 transition-colors opacity-0 group-hover:opacity-100">
-                        <Info className="w-4 h-4 text-gray-400 hover:text-white" />
-                      </button>
-                    }
+              
+              <h3 className="text-3xl font-bold text-white mb-2">{stat.value}</h3>
+              <p className="text-white/70 text-sm font-medium mb-4">{stat.title}</p>
+              
+              {/* Refined progress circle */}
+              <div className="relative w-16 h-16 mx-auto">
+                <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                  {/* Background circle */}
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.1)"
+                    strokeWidth="2"
                   />
-                )}
+                  {/* Progress circle */}
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke={`url(#progress-${index})`}
+                    strokeWidth="2"
+                    strokeDasharray={`${progressPercentage}, 100`}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                  <defs>
+                    <linearGradient id={`progress-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-medium text-white/80">{Math.round(progressPercentage)}%</span>
+                </div>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-1">{stat.value}</h3>
-            <p className="text-gray-400 text-sm">{stat.title}</p>
-            {stat.showBreakdown && (
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-            )}
           </div>
         );
       })}

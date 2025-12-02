@@ -32,6 +32,7 @@ export const useWorkflowEvents = () => {
       // Step 1: Find workflows that should trigger
       const { data: workflows, error: workflowError } = await supabase
         .from('workflow_definitions')
+        .schema('renotimeline_schema')
         .select('*')
         .eq('project_id', projectId)
         .eq('trigger_type', 'task_status_changed')
@@ -56,6 +57,7 @@ export const useWorkflowEvents = () => {
         // Create workflow execution record
         const { data: execution, error: executionError } = await supabase
           .from('workflow_executions')
+          .schema('renotimeline_schema')
           .insert({
             workflow_id: workflow.id,
             trigger_data: {

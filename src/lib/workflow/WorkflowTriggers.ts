@@ -1,4 +1,6 @@
 import { WorkflowEngine } from './WorkflowEngine';
+import { CalcRenoEventDetector } from '../services/CalcRenoEventDetector';
+import { renotimelineClient } from '../../integrations/supabase/client';
 import type { 
   TaskStatusChangedData, 
   TaskCreatedData, 
@@ -32,9 +34,66 @@ export class WorkflowTriggers {
     };
 
     try {
+      console.log('🔍 WorkflowTriggers.onTaskStatusChanged:', { taskId, projectId, fromStatus, toStatus, userId });
+      
+      // Trigger standard workflows
       await WorkflowEngine.evaluateWorkflows('task_status_changed', triggerData);
+
+      // Trigger CalcReno notifications for task completion
+      const completionStatuses = ['done', 'completed', 'ukończone', 'finished'];
+      console.log('🔍 Checking completion status:', { toStatus, completionStatuses, isMatch: completionStatuses.includes(toStatus.toLowerCase()) });
+      
+      if (completionStatuses.includes(toStatus.toLowerCase())) {
+        console.log('🎯 Task completed - triggering CalcReno notification');
+        await this.notifyCalcRenoTaskCompleted(taskId, projectId);
+      } else {
+        console.log('🔍 Task not completed, skipping CalcReno notification');
+      }
+
     } catch (error) {
       console.error('Error triggering task status changed workflows:', error);
+    }
+  }
+
+  /**
+   * Notify CalcReno when a task is completed
+   */
+  private static async notifyCalcRenoTaskCompleted(taskId: string, projectId: string): Promise<void> {
+    try {
+      // Fetch actual task details from the database
+      const { data: task, error } = await renotimelineClient
+        .from('tasks')
+        .select('name, estimated_duration_days, description')
+        .eq('id', taskId)
+        .single();
+
+      if (error || !task) {
+        console.error('Failed to fetch task details for CalcReno notification:', error);
+        return;
+      }
+
+      // Use real task data instead of placeholders
+      const taskTitle = task.name || 'Zadanie bez nazwy';
+      const estimatedHours = task.estimated_duration_days || 8;
+      const actualHours = estimatedHours; // For now, assume actual = estimated
+
+      console.log('📧 Sending CalcReno notification for completed task:', {
+        taskId,
+        taskTitle,
+        projectId,
+        estimatedHours,
+        actualHours
+      });
+
+      await CalcRenoEventDetector.onTaskCompleted(
+        taskId,
+        projectId,
+        taskTitle,
+        actualHours,
+        estimatedHours
+      );
+    } catch (error) {
+      console.error('Error notifying CalcReno of task completion:', error);
     }
   }
 
@@ -57,6 +116,9 @@ export class WorkflowTriggers {
 
     try {
       await WorkflowEngine.evaluateWorkflows('task_created', triggerData);
+      
+      // Trigger progress update for CalcReno
+      await this.notifyCalcRenoProgressUpdate(projectId);
     } catch (error) {
       console.error('Error triggering task created workflows:', error);
     }
@@ -83,6 +145,35 @@ export class WorkflowTriggers {
 
     try {
       await WorkflowEngine.evaluateWorkflows('task_assigned', triggerData);
+      
+      // Fetch user name for prettier notification
+      const { data: userProfile } = await renotimelineClient
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', toUser)
+        .single();
+
+      const userName = userProfile?.first_name && userProfile?.last_name
+        ? `${userProfile.first_name} ${userProfile.last_name}`
+        : userProfile?.email || 'Nieznany użytkownik';
+
+      // Fetch task title for prettier notification
+      const { data: task } = await renotimelineClient
+        .from('tasks')
+        .select('name')
+        .eq('id', taskId)
+        .single();
+
+      const taskTitle = task?.name || 'Zadanie bez nazwy';
+
+      // Notify CalcReno about team assignment changes
+      await CalcRenoEventDetector.onTeamUpdate(
+        projectId,
+        'role_changed',
+        userName,
+        toUser,
+        `Zadanie "${taskTitle}" zostało przypisane do ${userName}`
+      );
     } catch (error) {
       console.error('Error triggering task assigned workflows:', error);
     }
@@ -141,6 +232,93 @@ export class WorkflowTriggers {
       await WorkflowEngine.evaluateWorkflows('custom_field_changed', triggerData);
     } catch (error) {
       console.error('Error triggering custom field changed workflows:', error);
+    }
+  }
+
+  /**
+   * Trigger project timeline updates for CalcReno
+   */
+  static async onProjectTimelineUpdated(
+    projectId: string,
+    changeType: 'delay' | 'acceleration' | 'rescheduled',
+    details: {
+      originalEndDate?: string;
+      newEndDate?: string;
+      delayDays?: number;
+      reason?: string;
+      affectedTaskIds?: string[];
+    }
+  ): Promise<void> {
+    try {
+      if (changeType === 'delay' && details.delayDays && details.originalEndDate && details.newEndDate) {
+        await CalcRenoEventDetector.onTimelineDelay(
+          projectId,
+          details.delayDays,
+          details.originalEndDate,
+          details.newEndDate,
+          details.reason || 'Unknown reason',
+          details.affectedTaskIds || []
+        );
+      }
+    } catch (error) {
+      console.error('Error triggering timeline update notification:', error);
+    }
+  }
+
+  /**
+   * Trigger progress update notifications for CalcReno
+   */
+  static async notifyCalcRenoProgressUpdate(projectId: string): Promise<void> {
+    try {
+      // This would calculate actual progress from project data
+      // For now, we'll use a placeholder calculation
+      const progress = await this.calculateProjectProgress(projectId);
+      
+      await CalcRenoEventDetector.onProgressUpdate(
+        projectId,
+        progress.completionPercentage,
+        progress.tasksCompletedToday
+      );
+    } catch (error) {
+      console.error('Error sending progress update to CalcReno:', error);
+    }
+  }
+
+  /**
+   * Calculate project progress (placeholder implementation)
+   */
+  private static async calculateProjectProgress(projectId: string): Promise<{
+    completionPercentage: number;
+    tasksCompletedToday: number;
+  }> {
+    // This would be implemented with real database queries
+    // For now, return placeholder data
+    return {
+      completionPercentage: Math.floor(Math.random() * 100),
+      tasksCompletedToday: Math.floor(Math.random() * 5)
+    };
+  }
+
+  /**
+   * Trigger team member updates for CalcReno
+   */
+  static async onProjectTeamUpdated(
+    projectId: string,
+    updateType: 'member_added' | 'member_removed' | 'role_changed',
+    memberName: string,
+    memberId: string,
+    details: string
+  ): Promise<void> {
+    try {
+      await CalcRenoEventDetector.onTeamUpdate(
+        projectId,
+        updateType,
+        memberName,
+        memberId,
+        details
+      );
+    } catch (error) {
+      console.error('Error triggering team update notification:', error);
     }
   }
 

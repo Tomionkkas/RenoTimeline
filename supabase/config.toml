@@ -9,9 +9,9 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. public and storage are always included.
-schemas = ["public", "storage", "graphql_public"]
+schemas = ["public", "shared_schema", "storage", "graphql_public"]
 # Extra schemas to add to the search_path of every request. public is always included.
-extra_search_path = ["public", "extensions"]
+extra_search_path = ["public", "shared_schema", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
@@ -64,7 +64,7 @@ additional_redirect_urls = ["https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
-refresh_token_rotation_enabled = true
+
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
 # Requires refresh_token_rotation_enabled to be false.
 # refresh_token_reuse_interval = 10
@@ -115,9 +115,3 @@ template = "Your code is {{ .Code }} ."
 # # Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
 # # or any other third-party OIDC providers.
 # url = ""
-
-[edge_functions]
-enabled = true
-# Configure one of the supported request policies: `oneshot`, `per_worker`.
-# Use `oneshot` for hot reload, or `per_worker` for load testing.
-inspector_port = 8083

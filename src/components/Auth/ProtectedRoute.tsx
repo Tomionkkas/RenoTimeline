@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import AuthForm from './AuthForm';
-import TransitionWrapper from './TransitionWrapper';
-import { useDummyMode } from '@/hooks/useDummyMode';
+import LoginTransition from './LoginTransition';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,45 +8,35 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
-  const { isDummyMode } = useDummyMode();
-  const [showAuth, setShowAuth] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user && !isDummyMode) {
-        // Quick delay before showing auth
-        setTimeout(() => {
-          setShowAuth(true);
-        }, 100);
-      } else {
-        setShowAuth(false);
-      }
-    }
-  }, [user, loading, isDummyMode]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center natural-fade">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg">Ładowanie...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-white/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-purple-500 rounded-full animate-spin mx-auto" style={{ animationDelay: '-0.5s' }}></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-pink-500 rounded-full animate-spin mx-auto" style={{ animationDelay: '-1s' }}></div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xl font-semibold text-white">Ładowanie...</p>
+            <p className="text-white/60">Sprawdzanie sesji...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (showAuth) {
-    return (
-      <TransitionWrapper show={true} exitDuration={200}>
-        <AuthForm onSuccess={() => setShowAuth(false)} />
-      </TransitionWrapper>
-    );
+  // If user is already logged in, render children directly
+  if (user) {
+    return <>{children}</>;
   }
 
+  // If user is not logged in, render LoginTransition
   return (
-    <TransitionWrapper show={!!user || isDummyMode} delay={50} className="page-transition" exitDuration={200}>
+    <LoginTransition onSuccess={() => {}}>
       {children}
-    </TransitionWrapper>
+    </LoginTransition>
   );
 };
 
