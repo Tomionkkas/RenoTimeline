@@ -22,3 +22,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Development configuration files
+.mcp.json
+.claude/
+.cursor/
+
+# Test artifacts and screenshots
+.playwright-mcp/
+test-results/
+
+# Supabase local development temp files
+supabase/.temp/
+
+# Alternative package manager files
+bun.lockb
+
+# Development documentation (keep locally, exclude from git)
+ai_docs/
+docs/
+PHASE_2_IMPLEMENTATION_SUMMARY.md
+QA_TEST_PLAN_RenoTimeline.md
+RENOTIMELINE_NOTIFICATION_FIX.md
+supabas.json
