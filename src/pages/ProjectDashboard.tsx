@@ -31,7 +31,7 @@ import {
 
 // Import your existing components
 import { WorkflowManager } from '@/components/Workflows/WorkflowManager';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, renotimelineClient } from '@/integrations/supabase/client';
 import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useWorkflows } from '@/hooks/useWorkflows';
@@ -873,7 +873,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = () => {
         
         if (stateProjectId) {
           // We have the UUID from navigation state, fetch the project
-          const { data: projectData, error } = await supabase
+          const { data: projectData, error } = await renotimelineClient
             .from('projects')
             .select('*')
             .eq('id', stateProjectId)
@@ -894,7 +894,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = () => {
           ).join(' ');
           
           if (projectName) {
-            const { data: projectData, error } = await supabase
+            const { data: projectData, error } = await renotimelineClient
               .from('projects')
               .select('*')
               .ilike('name', projectName)

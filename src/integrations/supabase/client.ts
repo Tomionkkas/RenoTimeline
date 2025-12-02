@@ -25,19 +25,15 @@ const commonOptions = {
   },
 };
 
-const createSchemaClient = (schema: keyof Database) => {
-  return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    ...commonOptions,
-    db: {
-      schema,
-    },
-  });
-};
-
 // Create the main client first
 const mainClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, commonOptions);
 
-// Create schema-specific clients that share the same auth instance
+/**
+ * Creates a schema-specific client that shares auth with mainClient.
+ * Note: This creates a new client instance but reassigns auth to prevent
+ * multiple auth state. Each client targets a different PostgreSQL schema.
+ * For production optimization, consider lazy loading clients on demand.
+ */
 const createSchemaClientWithSharedAuth = (schema: keyof Database) => {
   const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     ...commonOptions,

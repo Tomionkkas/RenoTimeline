@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, renotimelineClient } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Home, Calendar, DollarSign, FileText, Sparkles, ArrowRight } from 'lucide-react';
 
@@ -68,7 +68,7 @@ const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ onComplete, onSkip 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase
+      const { error } = await renotimelineClient
         .from('projects')
         .insert({
           name: projectName,
@@ -76,7 +76,7 @@ const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ onComplete, onSkip 
           budget: budget ? parseFloat(budget) : null,
           start_date: startDate || null,
           end_date: endDate || null,
-          owner_id: user.id,
+          user_id: user.id,
         });
 
       if (error) throw error;
