@@ -30,33 +30,76 @@ const mainClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, commonOp
 
 /**
  * Creates a schema-specific client that shares auth with mainClient.
- * Note: This creates a new client instance but reassigns auth to prevent
- * multiple auth state. Each client targets a different PostgreSQL schema.
- * For production optimization, consider lazy loading clients on demand.
+ * Uses lazy initialization to avoid creating multiple GoTrueClient instances.
+ * Schema clients don't persist sessions - they share the main client's auth.
  */
 const createSchemaClientWithSharedAuth = (schema: keyof Database) => {
   const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    ...commonOptions,
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: false, // Main client handles this
+      persistSession: false,   // Main client handles this
+      detectSessionInUrl: false,
+      flowType: 'pkce' as const,
+    },
     db: {
       schema,
     },
+    global: {
+      headers: { 'x-realtime-revalidate': 'true' },
+    },
   });
-  
+
   // Share the auth instance from the main client
   (client as any).auth = mainClient.auth;
-  
+
   return client;
 };
 
+// Lazy initialization to prevent multiple GoTrueClient warnings
+let _renotimelineClient: ReturnType<typeof createClient> | null = null;
+let _sharedClient: ReturnType<typeof createClient> | null = null;
+let _calcrenoClient: ReturnType<typeof createClient> | null = null;
+let _publicClient: ReturnType<typeof createClient> | null = null;
+
 // Default client for RenoTimeline app data
 export const supabase = mainClient;
-export const renotimelineClient = createSchemaClientWithSharedAuth('renotimeline_schema');
+
+export const renotimelineClient = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!_renotimelineClient) {
+      _renotimelineClient = createSchemaClientWithSharedAuth('renotimeline_schema');
+    }
+    return (_renotimelineClient as any)[prop];
+  }
+});
 
 // Client for shared schema (user profiles, etc.)
-export const sharedClient = createSchemaClientWithSharedAuth('shared_schema');
+export const sharedClient = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!_sharedClient) {
+      _sharedClient = createSchemaClientWithSharedAuth('shared_schema');
+    }
+    return (_sharedClient as any)[prop];
+  }
+});
 
 // Client for CalcReno schema (for project imports)
-export const calcrenoClient = createSchemaClientWithSharedAuth('calcreno_schema');
+export const calcrenoClient = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!_calcrenoClient) {
+      _calcrenoClient = createSchemaClientWithSharedAuth('calcreno_schema');
+    }
+    return (_calcrenoClient as any)[prop];
+  }
+});
 
 // Client for the default public schema
-export const publicClient = createSchemaClientWithSharedAuth('public');
+export const publicClient = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!_publicClient) {
+      _publicClient = createSchemaClientWithSharedAuth('public');
+    }
+    return (_publicClient as any)[prop];
+  }
+});

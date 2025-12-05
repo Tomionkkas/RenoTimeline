@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
+import { useTeam } from '@/hooks/useTeam';
 import { toast } from 'sonner';
-import { Calendar, Clock, FileText, Target, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, FileText, Target, User, AlertTriangle, CheckCircle, Users } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 
 interface CreateTaskDialogProps {
@@ -20,6 +21,7 @@ interface CreateTaskDialogProps {
 
 const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange, projects, defaultStatus }) => {
   const { createTask } = useTasks();
+  const { teamMembers } = useTeam();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -28,7 +30,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
     priority: 2, // Default to Medium
     status: defaultStatus || 'pending' as Task['status'],
     end_date: '', // Was due_date
-    estimated_duration_days: ''
+    estimated_duration_days: '',
+    assigned_to: '' // Team member assignment
   });
 
   React.useEffect(() => {
@@ -75,7 +78,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         status: formData.status,
         end_date: formData.end_date || null,
         estimated_duration_days: formData.estimated_duration_days ? parseFloat(formData.estimated_duration_days) : null,
-        assigned_to: null,
+        assigned_to: formData.assigned_to || null,
         start_date: null,
       });
       
@@ -88,7 +91,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         priority: 2,
         status: 'pending',
         end_date: '',
-        estimated_duration_days: ''
+        estimated_duration_days: '',
+        assigned_to: ''
       });
     } catch (error) {
       toast.error('Nie udało się utworzyć zadania');
@@ -149,6 +153,32 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id} className="text-white hover:bg-white/20">
                     {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Team Member Assignment */}
+          <div className="space-y-3">
+            <Label htmlFor="assigned_to" className="text-white/80 font-medium flex items-center space-x-2">
+              <Users className="h-4 w-4 text-emerald-400" />
+              <span>Przypisz do członka zespołu</span>
+            </Label>
+            <Select
+              value={formData.assigned_to || undefined}
+              onValueChange={(value) => setFormData({ ...formData, assigned_to: value === 'unassigned' ? '' : value })}
+            >
+              <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12">
+                <SelectValue placeholder="Wybierz członka zespołu (opcjonalne)" />
+              </SelectTrigger>
+              <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
+                <SelectItem value="unassigned" className="text-white hover:bg-white/20">
+                  Brak przypisania
+                </SelectItem>
+                {teamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id} className="text-white hover:bg-white/20">
+                    {member.first_name} {member.last_name} {member.expertise && `- ${member.expertise}`}
                   </SelectItem>
                 ))}
               </SelectContent>

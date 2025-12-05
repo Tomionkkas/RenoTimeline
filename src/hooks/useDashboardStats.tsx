@@ -100,9 +100,9 @@ export const useDashboardStats = () => {
       const now = new Date();
       const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      // Get user's project IDs from the shared_schema.user_roles table
+      // Get user's project IDs from the shared_schema.project_roles table
       const { data: userRoles, error: rolesError } = await sharedClient
-        .from('user_roles')
+        .from('project_roles')
         .select('project_id')
         .eq('user_id', user.id)
         .eq('app_name', 'renotimeline');

@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings, Edit, X } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings, Edit, X, Users } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
+import { useTeam } from '@/hooks/useTeam';
 import { CustomFieldsSection } from '@/components/ui/CustomFieldsSection';
 import { useCustomFieldValues } from '@/hooks/useCustomFieldValues';
 import TaskChecklist from './TaskChecklist';
@@ -31,10 +32,12 @@ type FormData = {
   due_date: string;
   status: string;
   priority: number;
+  assigned_to: string;
 };
 
 const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChange, task }) => {
   const { updateTask } = useTasks();
+  const { teamMembers } = useTeam();
   const { register, control, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormData>({
     values: {
       name: task?.name || '',
@@ -43,6 +46,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
       due_date: task?.end_date ? new Date(task.end_date).toISOString().split('T')[0] : '',
       status: task?.status || 'pending',
       priority: task?.priority || 2,
+      assigned_to: task?.assigned_to || '',
     }
   });
 
@@ -60,6 +64,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
         end_date: data.due_date,
         status: data.status,
         priority: data.priority,
+        assigned_to: data.assigned_to || null,
       });
       toast.success('Zadanie zaktualizowane pomyślnie!');
       setIsEditing(false);
@@ -183,6 +188,40 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
                       <Input id="due_date" type="date" {...register('due_date')} className="mt-1 bg-slate-800 border-slate-600" />
                     ) : (
                       <p className="mt-1">{task.end_date ? new Date(task.end_date).toLocaleDateString('pl-PL') : 'Brak'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="assigned_to" className="text-sm font-medium text-slate-400 flex items-center">
+                      <Users className="h-4 w-4 mr-2" /> Przypisany do
+                    </Label>
+                    {isEditing ? (
+                      <Select
+                        onValueChange={(value) => setValue('assigned_to', value === 'unassigned' ? '' : value)}
+                        defaultValue={task.assigned_to || 'unassigned'}
+                      >
+                        <SelectTrigger className="mt-1 bg-slate-800 border-slate-600">
+                          <SelectValue placeholder="Wybierz członka zespołu" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 text-white">
+                          <SelectItem value="unassigned">Brak przypisania</SelectItem>
+                          {teamMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.first_name} {member.last_name} {member.expertise && `- ${member.expertise}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="mt-1">
+                        {task.assigned_to
+                          ? (() => {
+                              const assignedMember = teamMembers.find(m => m.id === task.assigned_to);
+                              return assignedMember
+                                ? `${assignedMember.first_name} ${assignedMember.last_name}`
+                                : 'Nieznany'
+                            })()
+                          : 'Brak'}
+                      </p>
                     )}
                   </div>
                 </div>

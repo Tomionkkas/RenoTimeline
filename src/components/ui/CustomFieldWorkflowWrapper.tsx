@@ -35,7 +35,9 @@ export const CustomFieldWorkflowWrapper: React.FC<CustomFieldWorkflowWrapperProp
         // Find field definition to get the field name
         const fieldDefinition = definitions.find(def => def.id === fieldId);
         const fieldName = fieldDefinition?.name || fieldId;
-        
+
+        // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+        /*
         // Trigger workflow for custom field change
         WorkflowTriggers.onCustomFieldChanged(
           entityType,
@@ -48,6 +50,7 @@ export const CustomFieldWorkflowWrapper: React.FC<CustomFieldWorkflowWrapperProp
         ).catch(error => {
           console.error(`Failed to trigger workflow for custom field change: ${fieldName}`, error);
         });
+        */
         
         // Call the optional callback
         if (onFieldChange) {
@@ -88,7 +91,9 @@ export const useCustomFieldWorkflowTracking = (
     if (actualOldValue !== undefined && actualOldValue !== newValue) {
       const fieldDefinition = definitions.find(def => def.id === fieldId);
       const fieldName = fieldDefinition?.name || fieldId;
-      
+
+      // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+      /*
       // Trigger workflow for custom field change
       WorkflowTriggers.onCustomFieldChanged(
         entityType,
@@ -101,6 +106,7 @@ export const useCustomFieldWorkflowTracking = (
       ).catch(error => {
         console.error(`Failed to trigger workflow for custom field change: ${fieldName}`, error);
       });
+      */
     }
     
     // Update the tracked value

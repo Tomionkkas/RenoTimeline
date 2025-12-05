@@ -22,6 +22,8 @@ export class TaskAssignmentHelper {
     assignedBy: string,
     fromUserId?: string
   ): Promise<void> {
+    // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+    /*
     try {
       await WorkflowTriggers.onTaskAssigned(
         taskId,
@@ -34,6 +36,7 @@ export class TaskAssignmentHelper {
       console.error('Failed to trigger assignment workflows:', error);
       // Don't fail the assignment if workflow triggers fail
     }
+    */
   }
 
   /**
@@ -45,6 +48,8 @@ export class TaskAssignmentHelper {
     fromUserId: string,
     unassignedBy: string
   ): Promise<void> {
+    // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+    /*
     try {
       await WorkflowTriggers.onTaskAssigned(
         taskId,
@@ -57,6 +62,7 @@ export class TaskAssignmentHelper {
       console.error('Failed to trigger unassignment workflows:', error);
       // Don't fail the unassignment if workflow triggers fail
     }
+    */
   }
 
   /**
@@ -69,6 +75,8 @@ export class TaskAssignmentHelper {
     toUserId: string,
     changedBy: string
   ): Promise<void> {
+    // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+    /*
     try {
       await WorkflowTriggers.onTaskAssigned(
         taskId,
@@ -81,6 +89,7 @@ export class TaskAssignmentHelper {
       console.error('Failed to trigger assignment change workflows:', error);
       // Don't fail the assignment change if workflow triggers fail
     }
+    */
   }
 }
 

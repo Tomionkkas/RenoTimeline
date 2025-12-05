@@ -67,26 +67,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { data, error };
     }
 
-    // After successful sign-up, create a profile in the shared_schema.
-    if (data.user) {
-      const { error: profileError } = await sharedClient
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: data.user.email,
-          first_name: firstName,
-          last_name: lastName,
-        });
-      
-      if (profileError) {
-        // This is a critical error, as the user will be in an inconsistent state.
-        // We should probably delete the auth user if the profile creation fails.
-        // For now, we'll just log it and show a toast.
-        console.error("Failed to create user profile in shared_schema:", profileError);
-        toast.error("Wystąpił krytyczny błąd podczas tworzenia profilu użytkownika.");
-      }
-    }
-    
+    // Profile creation is handled automatically by database trigger (handle_new_user)
+    // No manual profile creation needed here - the trigger creates profiles in both
+    // public.profiles and shared_schema.profiles when a new user signs up
+
     return { data, error };
   }, []);
 

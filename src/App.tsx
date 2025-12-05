@@ -1,4 +1,5 @@
 import React from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ function App() {
           <MainRouter />
           <Sonner />
           <Toaster />
+          <Analytics />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

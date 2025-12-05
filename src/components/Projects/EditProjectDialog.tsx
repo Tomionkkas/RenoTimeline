@@ -52,7 +52,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project, open, on
       
       const fetchAssignedMembers = async () => {
         const { data, error } = await sharedClient
-          .from('user_roles')
+          .from('project_roles')
           .select('user_id')
           .eq('project_id', project.id)
           .eq('app_name', 'renotimeline');

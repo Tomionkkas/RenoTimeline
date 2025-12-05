@@ -140,7 +140,11 @@ const TeamOverview = () => {
                 
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-white font-semibold text-lg">{member.first_name || 'Nieznany użytkownik'}</h3>
+                    <h3 className="text-white font-semibold text-lg">
+                      {member.first_name && member.last_name
+                        ? `${member.first_name} ${member.last_name}`
+                        : member.first_name || member.last_name || 'Nieznany użytkownik'}
+                    </h3>
                     <Badge className={statusColors[member.status || 'offline']}>
                       {member.status === 'online' ? 'Online' : member.status === 'away' ? 'Niedostępny' : 'Offline'}
                     </Badge>
@@ -224,8 +228,12 @@ const TeamOverview = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Czy na pewno chcesz usunąć członka zespołu?</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">
-              Tej akcji nie można cofnąć. Spowoduje to trwałe usunięcie profilu 
-              użytkownika <span className="font-bold text-white">{memberToDelete?.first_name}</span>.
+              Tej akcji nie można cofnąć. Spowoduje to trwałe usunięcie profilu
+              użytkownika <span className="font-bold text-white">
+                {memberToDelete?.first_name && memberToDelete?.last_name
+                  ? `${memberToDelete.first_name} ${memberToDelete.last_name}`
+                  : memberToDelete?.first_name || memberToDelete?.last_name}
+              </span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

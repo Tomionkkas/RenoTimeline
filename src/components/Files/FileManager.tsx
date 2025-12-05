@@ -72,7 +72,9 @@ const FileManager = () => {
       try {
         // Upload the file
         await uploadFile(file, selectedProject);
-        
+
+        // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+        /*
         // Trigger workflow for file upload
         try {
           await WorkflowTriggers.onFileUploaded(
@@ -86,6 +88,7 @@ const FileManager = () => {
           console.error('Workflow trigger failed:', workflowError);
           // Don't fail the upload if workflow triggers fail
         }
+        */
       } catch (error) {
         console.error('File upload failed:', error);
       }

@@ -11,9 +11,10 @@ import CreateTaskDialog from './CreateTaskDialog';
 import { KanbanColumn } from "./KanbanColumn";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useWorkflowEvents } from '../../hooks/useWorkflowEvents';
-import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
-import { supabase } from '../../integrations/supabase/client';
+// Workflow imports disabled - will be enabled when workflows are implemented
+// import { useWorkflowEvents } from '../../hooks/useWorkflowEvents';
+// import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
+// import { supabase } from '../../integrations/supabase/client';
 
 // Corrected column definitions
 const columns: {
@@ -69,7 +70,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
   const [hasError, setHasError] = useState(false);
-  const { emitTaskStatusChanged } = useWorkflowEvents();
+  // Workflow events disabled - will be enabled when workflows are implemented
+  // const { emitTaskStatusChanged } = useWorkflowEvents();
 
   // Error boundary effect
   React.useEffect(() => {
@@ -106,11 +108,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
     });
     
     // Update the task status
-    updateTask({ 
-      id: taskId, 
-      status: newStatus as 'pending' | 'in_progress' | 'completed' | 'blocked' 
+    updateTask({
+      id: taskId,
+      status: newStatus as 'pending' | 'in_progress' | 'completed' | 'blocked'
     });
 
+    // WORKFLOW EXECUTION DISABLED - Will be implemented in the future
+    // Uncomment the code below when ready to enable workflow automation
+    /*
     // DIRECT workflow execution - no event bus, guaranteed to work
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,7 +127,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
           newStatus,
           userId: user.id
         });
-        
+
         // Direct execution - no event bus needed
         await emitTaskStatusChanged(
           taskId,
@@ -141,7 +146,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
           newStatus,
           user.id
         );
-        
+
         console.log('[KANBAN] DIRECT workflow execution completed successfully');
       } else {
         console.log('[KANBAN] Skipping workflow execution:', {
@@ -154,6 +159,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
     } catch (error) {
               console.error('[KANBAN] Error in DIRECT workflow execution:', error);
     }
+    */
 	};
 
   const filteredTasks = useMemo(() => {

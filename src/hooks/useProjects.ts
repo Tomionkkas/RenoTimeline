@@ -35,7 +35,7 @@ export const useProjects = () => {
 
     // Step 2: Get projects where user is assigned a role from shared_schema
     const { data: assignments, error: assignmentError } = await sharedClient
-      .from('user_roles')
+      .from('project_roles')
       .select('project_id')
       .eq('user_id', user.id)
       .eq('app_name', 'renotimeline');
@@ -93,9 +93,9 @@ export const useProjects = () => {
       if (projectError) throw new Error(projectError.message);
       if (!newProject) throw new Error("Project creation failed");
 
-      // Step 2: Assign the user as the owner in shared_schema.user_roles
+      // Step 2: Assign the user as the owner in shared_schema.project_roles
       const { error: roleError } = await sharedClient
-        .from('user_roles')
+        .from('project_roles')
         .insert({
           user_id: user.id,
           project_id: newProject.id,
@@ -150,7 +150,7 @@ export const useProjects = () => {
 
   const assignMemberToProject = useMutation({
     mutationFn: async ({ projectId, profileId, role }: { projectId: string; profileId: string; role: string }) => {
-      const { data, error } = await sharedClient.from('user_roles').insert({
+      const { data, error } = await sharedClient.from('project_roles').insert({
         project_id: projectId,
         user_id: profileId,
         app_name: 'renotimeline',
@@ -167,7 +167,7 @@ export const useProjects = () => {
 
   const removeMemberFromProject = useMutation({
     mutationFn: async ({ projectId, profileId }: { projectId: string; profileId: string }) => {
-      const { error } = await sharedClient.from('user_roles').delete()
+      const { error } = await sharedClient.from('project_roles').delete()
         .eq('project_id', projectId)
         .eq('user_id', profileId)
         .eq('app_name', 'renotimeline');

@@ -65,7 +65,7 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
         expertise: data.expertise || null,
       };
       await updateTeamMember(updatedMember);
-      toast.success('Team member updated successfully!');
+      toast.success('Członek zespołu został zaktualizowany!');
       onOpenChange(false);
     } catch (error) {
       if (error instanceof Error) {
@@ -85,9 +85,9 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
               <Edit3 className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <DialogTitle className="text-2xl font-bold text-white">Edit Team Member</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-white">Edytuj członka zespołu</DialogTitle>
               <DialogDescription className="text-white/60 text-base">
-                Update the details of the team member.
+                Zaktualizuj dane członka zespołu.
               </DialogDescription>
             </div>
           </div>
@@ -99,7 +99,7 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
             <div className="flex items-center space-x-2">
               <User className="w-4 h-4 text-blue-400" />
               <Label htmlFor="first_name" className="text-white font-medium">
-                First Name
+                Imię
               </Label>
             </div>
             <Input 
@@ -120,7 +120,7 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
             <div className="flex items-center space-x-2">
               <User className="w-4 h-4 text-blue-400" />
               <Label htmlFor="last_name" className="text-white font-medium">
-                Last Name
+                Nazwisko
               </Label>
             </div>
             <Input 
@@ -141,7 +141,7 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
             <div className="flex items-center space-x-2">
               <Briefcase className="w-4 h-4 text-emerald-400" />
               <Label htmlFor="expertise" className="text-white font-medium">
-                Expertise
+                Specjalizacja
               </Label>
             </div>
             <Input 
@@ -162,7 +162,7 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
             <div className="flex items-center space-x-2">
               <Mail className="w-4 h-4 text-purple-400" />
               <Label htmlFor="email" className="text-white font-medium">
-                Email (Optional)
+                Email (Opcjonalny)
               </Label>
             </div>
             <Input 
@@ -187,10 +187,10 @@ export function EditTeamMemberDialog({ member, open, onOpenChange }: EditTeamMem
               {isUpdating ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  <span>Saving...</span>
+                  <span>Zapisywanie...</span>
                 </div>
               ) : (
-                'Save Changes'
+                'Zapisz zmiany'
               )}
             </Button>
           </DialogFooter>
