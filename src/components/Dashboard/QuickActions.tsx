@@ -32,17 +32,17 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onCreateTask, onCreateProje
 
   // Calculate quick stats for actions
   const overdueTasks = tasks.filter(task => {
-    if (!task.due_date) return false;
-    return new Date(task.due_date) < new Date() && task.status !== 'done';
+    if (!task.end_date) return false;
+    return new Date(task.end_date) < new Date() && task.status !== 'completed';
   }).length;
 
   const todayTasks = tasks.filter(task => {
-    if (!task.due_date) return false;
+    if (!task.end_date) return false;
     const today = new Date().toDateString();
-    return new Date(task.due_date).toDateString() === today && task.status !== 'done';
+    return new Date(task.end_date).toDateString() === today && task.status !== 'completed';
   }).length;
 
-  const activeProjects = projects.filter(p => p.status === 'active' || !p.status).length;
+  const activeProjects = projects.filter(p => p.status !== 'completed' && p.status !== 'archived').length;
 
   const quickActions = [
     {

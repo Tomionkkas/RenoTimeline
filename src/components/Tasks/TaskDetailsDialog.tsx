@@ -61,7 +61,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
         id: task.id,
         name: data.name,
         description: data.description,
-        end_date: data.due_date,
+        end_date: data.due_date || null,
         status: data.status,
         priority: data.priority,
         assigned_to: data.assigned_to || null,

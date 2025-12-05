@@ -261,7 +261,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Tablica Kanban
+              Tablica Zadań
             </h1>
             <p className="text-gray-400 mt-1">Zarządzaj zadaniami zespołu efektywnie</p>
           </div>

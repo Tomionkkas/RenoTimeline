@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjects } from '@/hooks/useProjects';
 import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarManagement } from '@/hooks/useCalendarManagement';
+import { useTasks, Task } from '@/hooks/useTasks';
 import CalendarMonthView from './CalendarMonthView';
 import TimelineView from '@/components/Timeline/TimelineView';
 import CreateTaskModal from './CreateTaskModal';
+import TaskDetailsDialog from '@/components/Tasks/TaskDetailsDialog';
 import { toast } from 'sonner';
 
 type CalendarView = 'month' | 'week' | 'day' | 'timeline';
@@ -27,8 +29,11 @@ const UnifiedCalendarView: React.FC = () => {
   // const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // This is now removed
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedModalDate, setSelectedModalDate] = useState<Date>(new Date());
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
 
   const { projects, loading: projectsLoading } = useProjects();
+  const { tasks } = useTasks();
   // We now get events directly from this hook
   const { events: calendarEvents, loading: eventsLoading, fetchEventsForDateRange } = useCalendarEvents();
   
@@ -56,15 +61,25 @@ const UnifiedCalendarView: React.FC = () => {
   };
 
   const handleEventClick = (event: CalendarEvent) => {
-    // TODO: Open task details dialog
-    console.log('Event clicked:', event);
-    toast.info(`Kliknięto: ${event.title}`);
+    // Find the task by ID and open the task details dialog
+    const task = tasks.find(t => t.id === event.id);
+    if (task) {
+      setSelectedTask(task);
+      setShowTaskDialog(true);
+    } else {
+      toast.error('Nie można znaleźć zadania');
+    }
   };
 
   const handleEventDoubleClick = (event: CalendarEvent) => {
-    // TODO: Open task edit dialog
-    console.log('Event double clicked:', event);
-    toast.info(`Edytuj: ${event.title}`);
+    // Open task details dialog (same as single click)
+    const task = tasks.find(t => t.id === event.id);
+    if (task) {
+      setSelectedTask(task);
+      setShowTaskDialog(true);
+    } else {
+      toast.error('Nie można znaleźć zadania');
+    }
   };
 
   const handleDayClick = (date: Date) => {
@@ -136,19 +151,45 @@ const UnifiedCalendarView: React.FC = () => {
     }
   };
 
+  // Helper to convert priority number to string
+  const getPriorityString = (priority: number): 'low' | 'medium' | 'high' | 'urgent' => {
+    switch (priority) {
+      case 1: return 'low';
+      case 2: return 'medium';
+      case 3: return 'high';
+      case 4: return 'urgent';
+      default: return 'medium';
+    }
+  };
+
+  // Transform events to match CalendarMonthView interface and filter by project
   const filteredEvents = useMemo(() => {
-    return calendarEvents.filter(event => 
-      selectedProject === 'all' || event.projectId === selectedProject
-    );
+    return calendarEvents
+      .filter(event =>
+        selectedProject === 'all' || event.extendedProps?.projectId === selectedProject
+      )
+      .map(event => ({
+        id: event.id,
+        title: event.title,
+        date: event.end, // Use end date as the display date
+        projectId: event.extendedProps?.projectId || '',
+        projectName: event.extendedProps?.projectName || '',
+        status: event.extendedProps?.status || 'pending',
+        priority: getPriorityString(event.extendedProps?.priority || 2),
+        isAllDay: event.allDay,
+        startTime: undefined,
+        endTime: undefined,
+        description: undefined
+      }));
   }, [calendarEvents, selectedProject]);
 
   const statsData = useMemo(() => {
     const total = filteredEvents.length;
-    const completed = filteredEvents.filter(e => e.status === 'done').length;
+    const completed = filteredEvents.filter(e => e.status === 'completed').length;
     const inProgress = filteredEvents.filter(e => e.status === 'in_progress').length;
     const overdue = filteredEvents.filter(e => {
       const eventDate = new Date(e.date);
-      return eventDate < new Date() && e.status !== 'done';
+      return eventDate < new Date() && e.status !== 'completed';
     }).length;
 
     return { total, completed, inProgress, overdue };
@@ -367,6 +408,13 @@ const UnifiedCalendarView: React.FC = () => {
         onOpenChange={handleModalClose}
         selectedDate={format(selectedModalDate, 'yyyy-MM-dd')}
         projectId={selectedProject === 'all' ? undefined : selectedProject}
+      />
+
+      {/* Task Details Dialog */}
+      <TaskDetailsDialog
+        open={showTaskDialog}
+        onOpenChange={setShowTaskDialog}
+        task={selectedTask}
       />
     </div>
   );

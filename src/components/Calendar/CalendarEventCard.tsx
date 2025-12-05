@@ -38,16 +38,29 @@ const CalendarEventCard: React.FC<CalendarEventCardProps> = ({
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'todo': return 'bg-red-500';
-      case 'in_progress': return 'bg-yellow-500';
-      case 'review': return 'bg-blue-500';
-      case 'done': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'pending':
+      case 'todo':
+        return 'bg-gray-500';
+      case 'in_progress':
+        return 'bg-blue-500';
+      case 'completed':
+      case 'done':
+        return 'bg-green-500';
+      case 'blocked':
+        return 'bg-red-500';
+      case 'review':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
+  const getPriorityColor = (priority: string | number) => {
+    const priorityStr = typeof priority === 'number'
+      ? (priority === 1 ? 'low' : priority === 2 ? 'medium' : priority === 3 ? 'high' : priority === 4 ? 'urgent' : 'medium')
+      : priority;
+
+    switch (priorityStr) {
       case 'urgent': return 'border-red-500 bg-red-50 dark:bg-red-950';
       case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-950';
       case 'medium': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950';
@@ -56,8 +69,12 @@ const CalendarEventCard: React.FC<CalendarEventCardProps> = ({
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    if (priority === 'urgent' || priority === 'high') {
+  const getPriorityIcon = (priority: string | number) => {
+    const priorityStr = typeof priority === 'number'
+      ? (priority === 1 ? 'low' : priority === 2 ? 'medium' : priority === 3 ? 'high' : priority === 4 ? 'urgent' : 'medium')
+      : priority;
+
+    if (priorityStr === 'urgent' || priorityStr === 'high') {
       return <AlertCircle className="w-3 h-3" />;
     }
     return null;
@@ -174,16 +191,17 @@ const CalendarEventCard: React.FC<CalendarEventCardProps> = ({
 
         <div className="flex items-center gap-1">
           <Badge variant="outline" className="text-xs">
-            {status === 'todo' ? 'Do zrobienia' :
+            {status === 'pending' || status === 'todo' ? 'Do zrobienia' :
              status === 'in_progress' ? 'W trakcie' :
-             status === 'review' ? 'Przegląd' :
-             status === 'done' ? 'Zakończone' : status}
+             status === 'completed' || status === 'done' ? 'Zakończone' :
+             status === 'blocked' ? 'Zablokowane' :
+             status === 'review' ? 'Przegląd' : status}
           </Badge>
           <Badge variant="outline" className="text-xs">
-            {priority === 'low' ? 'Niski' :
-             priority === 'medium' ? 'Średni' :
-             priority === 'high' ? 'Wysoki' :
-             priority === 'urgent' ? 'Pilny' : priority}
+            {priority === 'low' || priority === 1 ? 'Niski' :
+             priority === 'medium' || priority === 2 ? 'Średni' :
+             priority === 'high' || priority === 3 ? 'Wysoki' :
+             priority === 'urgent' || priority === 4 ? 'Pilny' : priority}
           </Badge>
         </div>
       </div>

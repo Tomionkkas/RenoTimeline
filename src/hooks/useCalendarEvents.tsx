@@ -36,19 +36,19 @@ export const useCalendarEvents = () => {
       const { data: tasks, error } = await renotimelineClient
         .from('tasks')
         .select(`
-          id, 
-          name, 
+          id,
+          name,
           end_date,
           start_date,
-          status, 
+          status,
           priority,
           project_id,
           projects (name)
         `)
-        // RLS will handle user access, no need for .eq('created_by', user.id)
-        .gte('start_date', startDate.toISOString())
+        // RLS will handle user access
+        // Filter by end_date (due date) within the calendar range
+        .gte('end_date', startDate.toISOString())
         .lte('end_date', endDate.toISOString())
-        .not('start_date', 'is', null)
         .not('end_date', 'is', null);
 
       if (error) throw error;
@@ -56,7 +56,8 @@ export const useCalendarEvents = () => {
       const calendarEvents: CalendarEvent[] = (tasks || []).map(task => ({
         id: task.id,
         title: task.name,
-        start: task.start_date!,
+        // Use start_date if available, otherwise use end_date for both start and end
+        start: task.start_date || task.end_date!,
         end: task.end_date!,
         allDay: true, // Assuming tasks are all-day events for simplicity
         extendedProps: {

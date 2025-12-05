@@ -100,16 +100,28 @@ export const useDashboardStats = () => {
       const now = new Date();
       const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      // Get user's project IDs from the shared_schema.project_roles table
+      // Get owned projects
+      const { data: ownedProjects, error: ownedError } = await renotimelineClient
+        .from('projects')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (ownedError) throw ownedError;
+
+      // Get projects where user is assigned a role from shared_schema
       const { data: userRoles, error: rolesError } = await sharedClient
         .from('project_roles')
         .select('project_id')
         .eq('user_id', user.id)
         .eq('app_name', 'renotimeline');
-      
+
       if (rolesError) throw rolesError;
 
-      const allProjectIds = userRoles?.map(p => p.project_id) || [];
+      // Combine owned and assigned project IDs
+      const ownedProjectIds = ownedProjects?.map(p => p.id) || [];
+      const assignedProjectIds = userRoles?.map(p => p.project_id).filter(id => id !== null) as string[] || [];
+      const allProjectIdsSet = new Set([...ownedProjectIds, ...assignedProjectIds]);
+      const allProjectIds = Array.from(allProjectIdsSet);
       const currentProjects = allProjectIds.length;
       
       let currentCompletedTasks = 0;
