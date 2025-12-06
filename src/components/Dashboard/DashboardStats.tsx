@@ -2,9 +2,23 @@ import React from 'react';
 import { TrendingUp, CheckCircle, Clock, Users, Info } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import ProductivityBreakdown from './ProductivityBreakdown';
+import { useDashboardDispatch } from '@/contexts/DashboardContext';
 
 const DashboardStats = () => {
   const { stats, loading } = useDashboardStats();
+  const dispatch = useDashboardDispatch();
+
+  const handleStatClick = (title: string) => {
+    if (title === 'Ukończone zadania') {
+      dispatch({ type: 'SET_TAB', tab: 'kanban' });
+      // TODO: Set filter to completed? The context doesn't support setting filters yet, 
+      // but jumping to kanban is a good start.
+    } else if (title === 'Zadania w toku') {
+      dispatch({ type: 'SET_TAB', tab: 'kanban' });
+    } else if (title === 'Aktywne projekty') {
+      dispatch({ type: 'SET_TAB', tab: 'projects' });
+    }
+  };
 
   const statsConfig = [
     {
@@ -72,7 +86,8 @@ const DashboardStats = () => {
         return (
           <div
             key={index}
-            className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in relative group overflow-hidden"
+            onClick={() => handleStatClick(stat.title)}
+            className={`glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in relative group overflow-hidden ${stat.title !== 'Produktywność' ? 'cursor-pointer' : ''}`}
             style={{ animationDelay: `${index * 100}ms` }}
           >
             {/* Subtle background gradient */}

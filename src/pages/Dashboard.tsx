@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -42,9 +42,21 @@ import EditProjectDialog from '@/components/Projects/EditProjectDialog';
 import PageTransition from '@/components/ui/PageTransition';
 import { usePageTransition } from '@/hooks/usePageTransition';
 
+import { GreetingHeader } from '@/components/Dashboard/GreetingHeader';
+import { FocusCard } from '@/components/Dashboard/FocusCard';
+import { CommandCenter } from '@/components/CommandCenter/CommandCenter';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const [platformKey, setPlatformKey] = useState('Ctrl');
+  
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 || 
+                    navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
+      setPlatformKey(isMac ? '⌘' : 'Ctrl');
+    }
+  }, []);
   const { needsOnboarding, loading: onboardingLoading, completeOnboarding } = useOnboarding();
   const { toast } = useToast();
   const location = useLocation();
@@ -76,7 +88,20 @@ const Dashboard = () => {
   }, []); // Only run on mount
 
   useEffect(() => {
-    const { tab, itemId } = location.state || {};
+    const { tab, itemId, action } = location.state || {};
+    
+    if (action === 'create-task') {
+      dispatch({ type: 'CREATE_TASK' });
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+
+    if (action === 'create-project') {
+      dispatch({ type: 'CREATE_PROJECT' });
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+
     if (tab) {
       dispatch({ type: 'SET_TAB', tab });
       if (tab === 'kanban' && itemId && tasks.length > 0) {
@@ -89,7 +114,7 @@ const Dashboard = () => {
         navigate(location.pathname, { replace: true, state: {} });
       }
     }
-  }, [location.state, navigate, dispatch]);
+  }, [location.state, navigate, dispatch, tasks]);
 
   // Separate effect to handle task selection when tasks are loaded
   useEffect(() => {
@@ -177,7 +202,17 @@ const Dashboard = () => {
                   <h1 className="text-xl font-bold gradient-text-animated">RenoTimeline</h1>
                 </div>
                 <div className="hidden md:block">
-                  <GlobalSearch />
+                  <Button
+                    variant="outline"
+                    className="relative h-9 w-9 p-0 xl:h-10 xl:w-60 xl:justify-start xl:px-3 xl:py-2 text-white/70 bg-white/10 border-white/10 hover:bg-white/20 hover:text-white"
+                    onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                  >
+                    <Search className="h-4 w-4 xl:mr-2" />
+                    <span className="hidden xl:inline-flex">Search...</span>
+                    <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-6 select-none items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 xl:flex text-white/50 border-white/20 bg-black/20">
+                      <span className="text-xs">{platformKey}</span>K
+                    </kbd>
+                  </Button>
                 </div>
               </div>
 
@@ -200,17 +235,8 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8 animate-fadeIn">
-            <h2 className="text-3xl font-bold text-white mb-3">
-              Dashboard RenoTimeline
-            </h2>
-            <p className="text-white/60 text-lg">
-              Zarządzaj swoimi projektami remontowymi z inteligentnym wsparciem.
-            </p>
-          </div>
-
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-8">
               <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
                 <TabsTrigger value="dashboard" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
                   <LayoutDashboard className="w-4 h-4" />
@@ -252,6 +278,13 @@ const Dashboard = () => {
             </div>
 
             <TabsContent value="dashboard" className="space-y-8 animate-fadeIn">
+              <GreetingHeader />
+              {tasks && tasks.length > 0 && (
+                <FocusCard 
+                  tasks={tasks} 
+                  onTaskClick={(task) => dispatch({ type: 'SELECT_TASK', task })} 
+                />
+              )}
               <div className="stagger-animation">
                 <DashboardStats />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -315,6 +348,7 @@ const Dashboard = () => {
       />
     )}
     <Toaster position="top-center" reverseOrder={false} />
+    <CommandCenter />
     </>
   );
 };

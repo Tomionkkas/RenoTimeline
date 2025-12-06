@@ -15,6 +15,7 @@ interface KanbanColumnProps {
   color?: string;
   bgGradient?: string;
   icon?: React.ComponentType<{ className?: string }>;
+  limit?: number;
 }
 
 const statusTitleMap: { [key: string]: string } = {
@@ -46,7 +47,8 @@ export function KanbanColumn({
   onAddTask,
   color = 'text-gray-300',
   bgGradient = 'from-gray-500/20 to-gray-600/20',
-  icon: IconComponent
+  icon: IconComponent,
+  limit
 }: KanbanColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.TASK,
@@ -58,18 +60,24 @@ export function KanbanColumn({
 
   const title = statusTitleMap[status] || 'Nieznany';
   const fallbackColor = statusColorMap[status] || 'bg-gray-500';
+  const isOverLimit = limit ? tasks.length > limit : false;
 
   const getProgressPercentage = () => {
     if (tasks.length === 0) return 0;
-    return Math.min((tasks.length / 10) * 100, 100); // Assume max 10 tasks for full progress
+    const max = limit || 10;
+    return Math.min((tasks.length / max) * 100, 100); 
   };
 
   return (
     <div
       ref={drop}
       className={`
-        relative overflow-hidden rounded-2xl border border-gray-700/30 
-        bg-gradient-to-b ${bgGradient} backdrop-blur-sm
+        relative overflow-hidden rounded-2xl border 
+        ${isOverLimit 
+          ? 'border-red-500/50 bg-red-500/5' 
+          : 'border-gray-700/30 bg-gradient-to-b ' + bgGradient
+        }
+        backdrop-blur-sm
         transition-all duration-300 ease-out
         ${isOver ? 'border-blue-400/50 bg-blue-500/10 scale-[1.02] shadow-2xl shadow-blue-500/20' : 'hover:border-gray-600/50'}
         min-h-[600px] flex flex-col
@@ -78,7 +86,7 @@ export function KanbanColumn({
       {/* Progress bar at top */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800/50">
         <div 
-          className={`h-full bg-gradient-to-r ${bgGradient.replace('/20', '/60')} transition-all duration-500`}
+          className={`h-full transition-all duration-500 ${isOverLimit ? 'bg-red-500' : `bg-gradient-to-r ${bgGradient.replace('/20', '/60')}`}`}
           style={{ width: `${getProgressPercentage()}%` }}
         />
       </div>
@@ -87,17 +95,20 @@ export function KanbanColumn({
       <div className="p-6 pb-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className={`${color}`}>
+            <div className={`${isOverLimit ? 'text-red-400' : color}`}>
               {IconComponent && <IconComponent className="w-6 h-6" />}
             </div>
             <div>
-              <h3 className={`font-bold text-lg ${color}`}>{title}</h3>
+              <h3 className={`font-bold text-lg ${isOverLimit ? 'text-red-400' : color}`}>{title}</h3>
               <div className="flex items-center space-x-2 mt-1">
-                <span className={`text-xs px-2 py-1 rounded-full bg-gray-700/50 ${color}`}>
-                  {tasks.length} {tasks.length === 1 ? 'zadanie' : 'zadań'}
+                <span className={`text-xs px-2 py-1 rounded-full ${isOverLimit ? 'bg-red-500/20 text-red-400' : 'bg-gray-700/50 ' + color}`}>
+                  {tasks.length} {limit && `/ ${limit}`} {tasks.length === 1 ? 'zadanie' : 'zadań'}
                 </span>
-                {tasks.length > 0 && (
+                {tasks.length > 0 && !isOverLimit && (
                   <div className={`w-2 h-2 rounded-full ${fallbackColor.replace('bg-', 'bg-')} animate-pulse`} />
+                )}
+                {isOverLimit && (
+                   <span className="text-xs text-red-400 font-medium ml-1">Limit przekroczony!</span>
                 )}
               </div>
             </div>

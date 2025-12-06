@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Filter, Settings, Inbox, Zap, Eye, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Settings, Inbox, Zap, Eye, CheckCircle2, AlertTriangle, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useTeam } from '@/hooks/useTeam';
@@ -68,6 +70,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'board' | 'swimlanes'>('board');
+  const [wipLimits, setWipLimits] = useState<{ [key in Task['status']]?: number }>({
+    in_progress: 3,
+    pending: 10
+  });
 
   const [hasError, setHasError] = useState(false);
   // Workflow events disabled - will be enabled when workflows are implemented
@@ -309,6 +316,72 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
             />
           </div>
           
+          <div className="flex items-center space-x-2 border-l border-gray-700/50 pl-4">
+            <span className="text-gray-400 text-sm mr-2">Widok:</span>
+            <div className="flex bg-gray-700/50 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('board')}
+                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'board' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                Tablica
+              </button>
+              <button
+                onClick={() => setViewMode('swimlanes')}
+                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'swimlanes' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                Swimlanes
+              </button>
+            </div>
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="border-gray-600/50 text-gray-400 hover:bg-gray-700/50">
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                Limity WIP
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 bg-gray-800 border-gray-700 text-white">
+              <div className="space-y-4">
+                <h4 className="font-medium leading-none">Limity pracy w toku (WIP)</h4>
+                <p className="text-sm text-gray-400">Ustaw maksymalną liczbę zadań dla kolumn.</p>
+                
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="pending-limit">Do zrobienia</Label>
+                    <Input
+                      id="pending-limit"
+                      type="number"
+                      value={wipLimits.pending || ''}
+                      onChange={(e) => setWipLimits({...wipLimits, pending: parseInt(e.target.value) || undefined})}
+                      className="col-span-2 bg-gray-900 border-gray-700 text-white h-8"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="progress-limit">W toku</Label>
+                    <Input
+                      id="progress-limit"
+                      type="number"
+                      value={wipLimits.in_progress || ''}
+                      onChange={(e) => setWipLimits({...wipLimits, in_progress: parseInt(e.target.value) || undefined})}
+                      className="col-span-2 bg-gray-900 border-gray-700 text-white h-8"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="blocked-limit">Zablokowane</Label>
+                    <Input
+                      id="blocked-limit"
+                      type="number"
+                      value={wipLimits.blocked || ''}
+                      onChange={(e) => setWipLimits({...wipLimits, blocked: parseInt(e.target.value) || undefined})}
+                      className="col-span-2 bg-gray-900 border-gray-700 text-white h-8"
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {safeProjects.length > 0 && (
             <Select value={selectedProject} onValueChange={setSelectedProject}>
               <SelectTrigger className="w-48 bg-gray-700/50 border-gray-600/50 text-white">
@@ -371,8 +444,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
       </div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {columns.map((column) => (
+      {viewMode === 'board' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {columns.map((column) => (
             <KanbanColumn
               key={column.id}
               title={column.title}
@@ -384,9 +458,88 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
               color={column.color}
               bgGradient={column.bgGradient}
               icon={column.icon}
+              limit={wipLimits[column.id]}
             />
           ))}
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {teamMembers?.map((member) => {
+            const memberTasks = filteredTasks.filter(task => task.assigned_to === member.id);
+            if (memberTasks.length === 0) return null;
+
+            const memberTasksByStatus = {
+              pending: memberTasks.filter(t => t.status === 'pending'),
+              in_progress: memberTasks.filter(t => t.status === 'in_progress'),
+              completed: memberTasks.filter(t => t.status === 'completed'),
+              blocked: memberTasks.filter(t => t.status === 'blocked'),
+            };
+
+            return (
+              <div key={member.id} className="bg-gray-800/20 p-6 rounded-xl border border-gray-700/50">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
+                    {member.first_name?.[0]}{member.last_name?.[0]}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{member.first_name} {member.last_name}</h3>
+                    <p className="text-gray-400 text-sm">{member.role === 'admin' ? 'Administrator' : 'Członek zespołu'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {columns.map((column) => (
+                    <KanbanColumn
+                      key={column.id}
+                      title={column.title}
+                      status={column.id}
+                      tasks={memberTasksByStatus[column.id] || []}
+                      onDrop={handleDrop}
+                      onTaskClick={onTaskClick}
+                      onAddTask={handleShowCreateDialog}
+                      color={column.color}
+                      bgGradient={column.bgGradient}
+                      icon={column.icon}
+                      limit={wipLimits[column.id]} // Limits apply per person in swimlane view? Or global? Usually per lane.
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Unassigned Tasks Swimlane */}
+          {filteredTasks.some(task => !task.assigned_to) && (
+            <div className="bg-gray-800/20 p-6 rounded-xl border border-gray-700/50">
+               <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold mr-3">
+                    ?
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Nieprzypisane</h3>
+                    <p className="text-gray-400 text-sm">Zadania wymagające przydziału</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {columns.map((column) => (
+                    <KanbanColumn
+                      key={column.id}
+                      title={column.title}
+                      status={column.id}
+                      tasks={tasksByStatus[column.id].filter(t => !t.assigned_to) || []}
+                      onDrop={handleDrop}
+                      onTaskClick={onTaskClick}
+                      onAddTask={handleShowCreateDialog}
+                      color={column.color}
+                      bgGradient={column.bgGradient}
+                      icon={column.icon}
+                      limit={wipLimits[column.id]}
+                    />
+                  ))}
+                </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <CreateTaskDialog 
         open={showCreateDialog}
