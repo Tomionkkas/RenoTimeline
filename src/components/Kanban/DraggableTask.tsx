@@ -5,6 +5,7 @@ import { User, Clock, Calendar, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { useTeam } from '@/hooks/useTeam';
+import { useTaskAssignments } from '@/hooks/useTaskAssignments';
 
 export const ItemTypes = {
   TASK: 'task',
@@ -38,6 +39,7 @@ const statusBorderColors: { [key: string]: string } = {
 
 export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
   const { teamMembers } = useTeam();
+  const { assignments } = useTaskAssignments(task.id);
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.TASK,
     item: { id: task.id },
@@ -49,9 +51,9 @@ export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
   const { label: priorityLabel, styles: priorityStyle } = getPriorityInfo(task.priority);
   const borderColor = statusBorderColors[task.status] || 'border-l-gray-400';
 
-  // Find assigned team member
-  const assignedMember = task.assigned_to 
-    ? teamMembers?.find(member => member.id === task.assigned_to)
+  // Find assigned team member (backwards compatibility)
+  const assignedMember = task.assigned_to
+    ? teamMembers?.find(member => member.user_id === task.assigned_to)
     : null;
   
   const isOverdue = task.end_date && new Date(task.end_date) < new Date();
@@ -131,32 +133,56 @@ export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
 
       {/* Footer */}
       <div className="space-y-2">
-        {/* First row: Assignee and Due Date */}
+        {/* First row: Assignees and Due Date */}
         <div className="flex items-center justify-between">
-          {/* Assignee */}
-          <div className="flex items-center space-x-1">
-            {assignedMember ? (
+          {/* Assignees - show multiple if available */}
+          <div className="flex items-center -space-x-2">
+            {assignments.length > 0 ? (
               <>
-                <div 
-                  className="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm text-white text-xs font-medium" 
-                  title={`Przypisano: ${assignedMember.first_name} ${assignedMember.last_name}`}
-                >
-                  {assignedMember.first_name?.charAt(0)}{assignedMember.last_name?.charAt(0)}
-                </div>
-                <span className="text-xs text-gray-400 font-medium truncate max-w-[60px]">
-                  {assignedMember.first_name}
-                </span>
+                {assignments.slice(0, 3).map((assignment, index) => {
+                  const firstName = assignment.first_name || '';
+                  const lastName = assignment.last_name || '';
+                  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+                  const fullName = `${firstName} ${lastName}`.trim() || 'Nieznany';
+
+                  return (
+                    <div
+                      key={assignment.id}
+                      className="relative w-6 h-6 rounded-full flex items-center justify-center shadow-md text-white text-xs font-medium bg-gradient-to-br from-blue-500 to-blue-600"
+                      title={fullName}
+                      style={{ zIndex: assignments.length - index }}
+                    >
+                      {initials}
+                    </div>
+                  );
+                })}
+                {assignments.length > 3 && (
+                  <div
+                    className="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center shadow-md text-white text-xs font-medium"
+                    title={`+${assignments.length - 3} więcej`}
+                  >
+                    +{assignments.length - 3}
+                  </div>
+                )}
               </>
+            ) : assignedMember ? (
+              // Fallback to old single assignment display
+              <div
+                className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm text-white text-xs font-medium"
+                title={`Przypisano: ${assignedMember.first_name} ${assignedMember.last_name}`}
+              >
+                {assignedMember.first_name?.charAt(0)}{assignedMember.last_name?.charAt(0)}
+              </div>
             ) : task.assigned_to ? (
-              <div 
-                className="w-5 h-5 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center shadow-sm" 
+              <div
+                className="w-6 h-6 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center shadow-sm"
                 title="Użytkownik nie znaleziony"
               >
                 <User className="w-3 h-3 text-white" />
               </div>
             ) : (
-              <div 
-                className="w-5 h-5 bg-gray-600/50 rounded-full flex items-center justify-center border border-gray-600/30" 
+              <div
+                className="w-6 h-6 bg-gray-600/50 rounded-full flex items-center justify-center border border-gray-600/30"
                 title="Nie przypisano"
               >
                 <User className="w-3 h-3 text-gray-400" />

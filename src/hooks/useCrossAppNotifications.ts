@@ -101,6 +101,34 @@ export const useCrossAppNotifications = () => {
     }
   };
 
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!user) return;
+
+    try {
+      const unreadIds = notifications
+        .filter(n => !n.is_read)
+        .map(n => n.id);
+
+      if (unreadIds.length === 0) return;
+
+      const { error } = await sharedClient
+        .from('cross_app_notifications')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+
+      if (error) throw error;
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notif => ({ ...notif, is_read: true }))
+      );
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+      throw err;
+    }
+  };
+
   // Send notification to CalcReno about RenoTimeline events
   const notifyCalcReno = async (projectId: string, eventType: string, eventData: any) => {
     if (!user) return;
@@ -171,6 +199,7 @@ export const useCrossAppNotifications = () => {
     unreadCount,
     sendCrossAppNotification,
     markAsRead,
+    markAllAsRead,
     notifyCalcReno,
     refetch: fetchNotifications,
   };

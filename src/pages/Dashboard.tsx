@@ -19,18 +19,19 @@ import SettingsPanel from '@/components/Settings/SettingsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  LayoutDashboard, 
-  FolderOpen, 
-  Kanban, 
-  Users, 
-  LogOut, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  FolderOpen,
+  Kanban,
+  Users,
+  LogOut,
+  BarChart3,
   Bell,
   Folder,
   Calendar,
   Settings,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GlobalSearch from '@/components/ui/GlobalSearch';
@@ -45,6 +46,7 @@ import { usePageTransition } from '@/hooks/usePageTransition';
 import { GreetingHeader } from '@/components/Dashboard/GreetingHeader';
 import { FocusCard } from '@/components/Dashboard/FocusCard';
 import { CommandCenter } from '@/components/CommandCenter/CommandCenter';
+import { FeedbackFeed } from '@/components/Feedback/FeedbackFeed';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -270,6 +272,10 @@ const Dashboard = () => {
                     <Bell className="w-4 h-4" />
                     <span className="hidden sm:inline">Powiadomienia</span>
                 </TabsTrigger>
+                <TabsTrigger value="feedback" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="hidden sm:inline">Opinie</span>
+                </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
                     <Settings className="w-4 h-4" />
                     <span className="hidden sm:inline">Ustawienia</span>
@@ -327,6 +333,10 @@ const Dashboard = () => {
             
             <TabsContent value="settings" className="animate-fadeIn">
               <SettingsPanel />
+            </TabsContent>
+
+            <TabsContent value="feedback" className="animate-fadeIn">
+              <FeedbackFeed />
             </TabsContent>
 
           </Tabs>

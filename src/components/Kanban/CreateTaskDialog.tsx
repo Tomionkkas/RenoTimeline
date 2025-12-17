@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useTeam } from '@/hooks/useTeam';
+import { useTaskAssignments } from '@/hooks/useTaskAssignments';
 import { toast } from 'sonner';
 import { Calendar, Clock, FileText, Target, User, AlertTriangle, CheckCircle, Users } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
@@ -23,6 +25,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
   const { createTask } = useTasks();
   const { teamMembers } = useTeam();
   const [loading, setLoading] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]); // stores team_member IDs
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -31,7 +34,6 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
     status: defaultStatus || 'pending' as Task['status'],
     end_date: '', // Was due_date
     estimated_duration_days: '',
-    assigned_to: '' // Team member assignment
   });
 
   React.useEffect(() => {
@@ -41,6 +43,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         status: defaultStatus || 'pending'
       }));
     }
+    // Reset selected members when dialog opens/closes
+    setSelectedMembers([]);
   }, [open, defaultStatus]);
 
   const priorityOptions = [
@@ -57,6 +61,14 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
     { value: 'blocked', label: 'Zablokowane', color: 'text-red-400' }
   ];
 
+  const handleMemberToggle = (memberId: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -70,7 +82,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
 
     setLoading(true);
     try {
-      await createTask({
+      // Create the task first
+      const newTask = await createTask({
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         project_id: formData.project_id,
@@ -78,10 +91,30 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         status: formData.status,
         end_date: formData.end_date || null,
         estimated_duration_days: formData.estimated_duration_days ? parseFloat(formData.estimated_duration_days) : null,
-        assigned_to: formData.assigned_to || null,
+        assigned_to: selectedMembers.length > 0 ? selectedMembers[0] : null,
         start_date: null,
       });
-      
+
+      // Create task assignments if members were selected
+      if (selectedMembers.length > 0 && newTask?.id) {
+        const { renotimelineClient } = await import('@/integrations/supabase/client');
+
+        const assignmentsToCreate = selectedMembers.map((teamMemberId, index) => ({
+          task_id: newTask.id,
+          team_member_id: teamMemberId,
+          assignment_order: index + 1,
+        }));
+
+        const { error: assignmentError } = await renotimelineClient
+          .from('task_assignments')
+          .insert(assignmentsToCreate);
+
+        if (assignmentError) {
+          console.error('Error creating assignments:', assignmentError);
+          toast.error('Zadanie utworzone, ale błąd przy przypisywaniu członków zespołu');
+        }
+      }
+
       toast.success('Zadanie zostało utworzone pomyślnie!');
       onOpenChange(false);
       setFormData({
@@ -92,8 +125,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
         status: 'pending',
         end_date: '',
         estimated_duration_days: '',
-        assigned_to: ''
       });
+      setSelectedMembers([]);
     } catch (error) {
       toast.error('Nie udało się utworzyć zadania');
       console.error('Error creating task:', error);
@@ -161,28 +194,65 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onOpenChange,
 
           {/* Team Member Assignment */}
           <div className="space-y-3">
-            <Label htmlFor="assigned_to" className="text-white/80 font-medium flex items-center space-x-2">
+            <Label className="text-white/80 font-medium flex items-center space-x-2">
               <Users className="h-4 w-4 text-emerald-400" />
-              <span>Przypisz do członka zespołu</span>
+              <span>Przypisz członków zespołu (opcjonalne)</span>
             </Label>
-            <Select
-              value={formData.assigned_to || undefined}
-              onValueChange={(value) => setFormData({ ...formData, assigned_to: value === 'unassigned' ? '' : value })}
-            >
-              <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-white/30 rounded-xl h-12">
-                <SelectValue placeholder="Wybierz członka zespołu (opcjonalne)" />
-              </SelectTrigger>
-              <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
-                <SelectItem value="unassigned" className="text-white hover:bg-white/20">
-                  Brak przypisania
-                </SelectItem>
-                {teamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id} className="text-white hover:bg-white/20">
-                    {member.first_name} {member.last_name} {member.expertise && `- ${member.expertise}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="text-xs text-white/60 mb-2">
+              Zaznacz członków zespołu ({selectedMembers.length} wybrano)
+            </div>
+
+            {teamMembers.length === 0 ? (
+              <p className="text-sm text-white/50">Brak członków zespołu w tym projekcie</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                {teamMembers.map((member) => {
+                  const isSelected = selectedMembers.includes(member.id);
+                  const selectedIndex = selectedMembers.indexOf(member.id);
+
+                  return (
+                    <div
+                      key={member.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-white/10 border-white/30 hover:bg-white/15'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                      onClick={() => handleMemberToggle(member.id)}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          isSelected ? 'bg-blue-500 border-blue-500' : 'border-white/30 bg-transparent'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30">
+                          {selectedIndex + 1}
+                        </div>
+                      )}
+                      <User className={`h-4 w-4 ${isSelected ? 'text-blue-400' : 'text-white/40'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-white/70'}`}>
+                          {member.first_name} {member.last_name}
+                        </p>
+                        {member.expertise && (
+                          <p className={`text-xs truncate ${isSelected ? 'text-white/60' : 'text-white/50'}`}>
+                            {member.expertise}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Task Description */}

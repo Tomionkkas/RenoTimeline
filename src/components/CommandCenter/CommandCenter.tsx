@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
-import { 
-  LayoutDashboard, 
-  Folder, 
-  Kanban, 
-  Calendar, 
-  Settings, 
-  Plus, 
+import {
+  LayoutDashboard,
+  Folder,
+  Kanban,
+  Calendar,
+  Settings,
+  Plus,
   Search,
   FileText,
   User,
   Moon,
   Sun,
-  Laptop
+  Laptop,
+  MessageSquare
 } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -118,6 +119,13 @@ export function CommandCenter() {
               >
                 <Calendar className="mr-2 h-4 w-4" />
                 <span>Calendar</span>
+              </Command.Item>
+              <Command.Item
+                onSelect={() => runCommand(() => navigate('/', { state: { tab: 'feedback' } }))}
+                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-slate-800 aria-selected:text-white text-slate-300"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span>Feedback</span>
               </Command.Item>
               <Command.Item
                 onSelect={() => runCommand(() => navigate('/', { state: { tab: 'settings' } }))}

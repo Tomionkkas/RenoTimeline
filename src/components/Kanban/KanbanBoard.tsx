@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useTeam } from '@/hooks/useTeam';
+import { useAllTaskAssignments } from '@/hooks/useAllTaskAssignments';
 import CreateTaskDialog from './CreateTaskDialog';
 import { KanbanColumn } from "./KanbanColumn";
 import { DndProvider } from "react-dnd";
@@ -64,6 +65,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
   const { tasks, loading, updateTask } = useTasks();
   const { projects } = useProjects();
   const { teamMembers } = useTeam();
+  const { isTaskAssignedTo, isTaskAssigned, getUniqueAssignees, loading: assignmentsLoading } = useAllTaskAssignments();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [defaultStatus, setDefaultStatus] = useState<Task['status'] | undefined>(undefined);
   const [selectedProject, setSelectedProject] = useState<string>('all');
@@ -228,7 +230,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
   // Safety check for projects
   const safeProjects = projects || [];
 
-  if (loading) {
+  if (loading || assignmentsLoading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -464,26 +466,37 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
         </div>
       ) : (
         <div className="space-y-8">
-          {teamMembers?.map((member) => {
-            const memberTasks = filteredTasks.filter(task => task.assigned_to === member.id);
-            if (memberTasks.length === 0) return null;
+          {getUniqueAssignees().map((assignee) => {
+            // Filter tasks assigned to this specific assignee (user or team member)
+            const assigneeTasks = filteredTasks.filter(task =>
+              isTaskAssignedTo(
+                task.id,
+                assignee.type === 'user' ? assignee.id : null,
+                assignee.type === 'team_member' ? assignee.id : null
+              )
+            );
 
-            const memberTasksByStatus = {
-              pending: memberTasks.filter(t => t.status === 'pending'),
-              in_progress: memberTasks.filter(t => t.status === 'in_progress'),
-              completed: memberTasks.filter(t => t.status === 'completed'),
-              blocked: memberTasks.filter(t => t.status === 'blocked'),
+            if (assigneeTasks.length === 0) return null;
+
+            const assigneeTasksByStatus = {
+              pending: assigneeTasks.filter(t => t.status === 'pending'),
+              in_progress: assigneeTasks.filter(t => t.status === 'in_progress'),
+              completed: assigneeTasks.filter(t => t.status === 'completed'),
+              blocked: assigneeTasks.filter(t => t.status === 'blocked'),
             };
 
             return (
-              <div key={member.id} className="bg-gray-800/20 p-6 rounded-xl border border-gray-700/50">
+              <div key={`${assignee.type}-${assignee.id}`} className="bg-gray-800/20 p-6 rounded-xl border border-gray-700/50">
                 <div className="flex items-center mb-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
-                    {member.first_name?.[0]}{member.last_name?.[0]}
+                    {assignee.first_name?.[0]}{assignee.last_name?.[0]}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">{member.first_name} {member.last_name}</h3>
-                    <p className="text-gray-400 text-sm">{member.role === 'admin' ? 'Administrator' : 'Członek zespołu'}</p>
+                    <h3 className="text-xl font-bold text-white">{assignee.first_name} {assignee.last_name}</h3>
+                    <p className="text-gray-400 text-sm">
+                      {assignee.type === 'user' ? 'Członek zespołu' : 'Kontakt zewnętrzny'}
+                      {assignee.expertise && ` • ${assignee.expertise}`}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -492,14 +505,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
                       key={column.id}
                       title={column.title}
                       status={column.id}
-                      tasks={memberTasksByStatus[column.id] || []}
+                      tasks={assigneeTasksByStatus[column.id] || []}
                       onDrop={handleDrop}
                       onTaskClick={onTaskClick}
                       onAddTask={handleShowCreateDialog}
                       color={column.color}
                       bgGradient={column.bgGradient}
                       icon={column.icon}
-                      limit={wipLimits[column.id]} // Limits apply per person in swimlane view? Or global? Usually per lane.
+                      limit={wipLimits[column.id]}
                     />
                   ))}
                 </div>
@@ -508,7 +521,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
           })}
           
           {/* Unassigned Tasks Swimlane */}
-          {filteredTasks.some(task => !task.assigned_to) && (
+          {filteredTasks.some(task => !isTaskAssigned(task.id)) && (
             <div className="bg-gray-800/20 p-6 rounded-xl border border-gray-700/50">
                <div className="flex items-center mb-4">
                   <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold mr-3">
@@ -520,21 +533,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {columns.map((column) => (
-                    <KanbanColumn
-                      key={column.id}
-                      title={column.title}
-                      status={column.id}
-                      tasks={tasksByStatus[column.id].filter(t => !t.assigned_to) || []}
-                      onDrop={handleDrop}
-                      onTaskClick={onTaskClick}
-                      onAddTask={handleShowCreateDialog}
-                      color={column.color}
-                      bgGradient={column.bgGradient}
-                      icon={column.icon}
-                      limit={wipLimits[column.id]}
-                    />
-                  ))}
+                  {columns.map((column) => {
+                    const unassignedTasks = tasksByStatus[column.id].filter(t => !isTaskAssigned(t.id));
+                    return (
+                      <KanbanColumn
+                        key={column.id}
+                        title={column.title}
+                        status={column.id}
+                        tasks={unassignedTasks}
+                        onDrop={handleDrop}
+                        onTaskClick={onTaskClick}
+                        onAddTask={handleShowCreateDialog}
+                        color={column.color}
+                        bgGradient={column.bgGradient}
+                        icon={column.icon}
+                        limit={wipLimits[column.id]}
+                      />
+                    );
+                  })}
                 </div>
             </div>
           )}

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings, Edit, X, Users } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, FileText, CheckSquare, Bell, Settings, Edit, X, Users, Trash2 } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { CustomFieldsSection } from '@/components/ui/CustomFieldsSection';
@@ -18,6 +18,7 @@ import TaskChecklist from './TaskChecklist';
 import TaskReminders from './TaskReminders';
 import { toast } from 'sonner';
 import ComingSoon from '@/components/ui/ComingSoon';
+import TaskAssignments from './TaskAssignments';
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -36,7 +37,7 @@ type FormData = {
 };
 
 const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChange, task }) => {
-  const { updateTask } = useTasks();
+  const { updateTask, deleteTask } = useTasks();
   const { teamMembers } = useTeam();
   const { register, control, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormData>({
     values: {
@@ -52,6 +53,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
 
   const { customFieldValues, loading: customFieldsLoading } = useCustomFieldValues(task?.id);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const onSubmit = async (data: FormData) => {
     if (!task) return;
@@ -70,6 +72,19 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
       setIsEditing(false);
     } catch (error) {
       toast.error('Wystąpił błąd podczas aktualizacji zadania.');
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!task) return;
+
+    try {
+      await deleteTask(task.id);
+      toast.success('Zadanie zostało usunięte');
+      onOpenChange(false);
+    } catch (error) {
+      toast.error('Nie udało się usunąć zadania');
       console.error(error);
     }
   };
@@ -104,10 +119,21 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
         <DialogHeader>
           <div className="flex justify-between items-center">
             <DialogTitle className="text-2xl font-bold">{isEditing ? 'Edytuj zadanie' : task.name}</DialogTitle>
-            <Button variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)} className="text-slate-400 hover:text-white hover:bg-slate-700">
-              {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
-              <span className="sr-only">{isEditing ? 'Anuluj edycję' : 'Edytuj'}</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-5 w-5" />
+                <span className="sr-only">Usuń zadanie</span>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)} className="text-slate-400 hover:text-white hover:bg-slate-700">
+                {isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
+                <span className="sr-only">{isEditing ? 'Anuluj edycję' : 'Edytuj'}</span>
+              </Button>
+            </div>
           </div>
           <DialogDescription>
             Przeglądaj i zarządzaj szczegółami zadania.
@@ -190,39 +216,12 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
                       <p className="mt-1">{task.end_date ? new Date(task.end_date).toLocaleDateString('pl-PL') : 'Brak'}</p>
                     )}
                   </div>
-                  <div>
-                    <Label htmlFor="assigned_to" className="text-sm font-medium text-slate-400 flex items-center">
-                      <Users className="h-4 w-4 mr-2" /> Przypisany do
-                    </Label>
-                    {isEditing ? (
-                      <Select
-                        onValueChange={(value) => setValue('assigned_to', value === 'unassigned' ? '' : value)}
-                        defaultValue={task.assigned_to || 'unassigned'}
-                      >
-                        <SelectTrigger className="mt-1 bg-slate-800 border-slate-600">
-                          <SelectValue placeholder="Wybierz członka zespołu" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 text-white">
-                          <SelectItem value="unassigned">Brak przypisania</SelectItem>
-                          {teamMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.first_name} {member.last_name} {member.expertise && `- ${member.expertise}`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="mt-1">
-                        {task.assigned_to
-                          ? (() => {
-                              const assignedMember = teamMembers.find(m => m.id === task.assigned_to);
-                              return assignedMember
-                                ? `${assignedMember.first_name} ${assignedMember.last_name}`
-                                : 'Nieznany'
-                            })()
-                          : 'Brak'}
-                      </p>
-                    )}
+                  <div className="border-t border-slate-700 pt-4">
+                    <TaskAssignments
+                      taskId={task.id}
+                      projectId={task.project_id}
+                      isEditing={isEditing}
+                    />
                   </div>
                 </div>
               </div>
@@ -246,6 +245,34 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({ open, onOpenChang
             </div>
           )}
         </form>
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md mx-4">
+              <h3 className="text-xl font-bold text-white mb-2">Usuń zadanie</h3>
+              <p className="text-slate-300 mb-6">
+                Czy na pewno chcesz usunąć zadanie "{task.name}"? Ta operacja jest nieodwracalna.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="hover:bg-slate-700"
+                >
+                  Anuluj
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Usuń
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
