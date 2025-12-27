@@ -19,4 +19,12 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: [
+      'react-dnd',
+      'react-dnd-html5-backend',
+      'react-dnd-touch-backend',
+      'dnd-multi-backend',
+    ],
+  },
 }));

@@ -11,6 +11,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarManagement } from '@/hooks/useCalendarManagement';
 import { useTasks, Task } from '@/hooks/useTasks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import CalendarMonthView from './CalendarMonthView';
 import TimelineView from '@/components/Timeline/TimelineView';
 import CreateTaskModal from './CreateTaskModal';
@@ -23,6 +24,7 @@ type CalendarView = 'month' | 'week' | 'day' | 'timeline';
 // type CalendarView = 'month' | 'week' | 'day' | 'timeline';
 
 const UnifiedCalendarView: React.FC = () => {
+  const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<CalendarView>('month');
   const [selectedProject, setSelectedProject] = useState<string>('all');
@@ -196,48 +198,48 @@ const UnifiedCalendarView: React.FC = () => {
   }, [filteredEvents]);
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-4 md:space-y-8 animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Kalendarz projektów</h2>
-          <p className="text-white/60 text-lg">
+          <h2 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2">Kalendarz projektów</h2>
+          <p className="text-white/60 text-sm md:text-lg">
             Zintegrowany widok kalendarza i osi czasu
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
+      <div className="flex flex-col gap-3 md:gap-6">
         {/* Navigation */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between md:justify-start md:space-x-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('prev')}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg h-9 w-9 md:h-10 md:w-auto md:px-4"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          
-          <h2 className="text-xl font-semibold min-w-[200px] text-center text-white">
-            {format(currentDate, 'LLLL yyyy', { locale: pl })}
+
+          <h2 className="text-base md:text-xl font-semibold min-w-[160px] md:min-w-[200px] text-center text-white">
+            {format(currentDate, isMobile ? 'MMM yyyy' : 'LLLL yyyy', { locale: pl })}
           </h2>
-          
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('next')}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg h-9 w-9 md:h-10 md:w-auto md:px-4"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Filters and Views */}
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
           <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="w-[200px] bg-white/10 border-white/20 text-white">
+            <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white h-10">
               <SelectValue placeholder="Wybierz projekt" />
             </SelectTrigger>
             <SelectContent className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20">
@@ -249,80 +251,82 @@ const UnifiedCalendarView: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          
-          <Button 
-            variant="outline" 
-            onClick={goToToday}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg"
-          >
-            Dzisiaj
-          </Button>
 
-          <Button
-            variant="default"
-            onClick={handleCreateQuickTask}
-            disabled={selectedProject === 'all'}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nowe zadanie
-          </Button>
+          <div className="flex gap-2 md:gap-4">
+            <Button
+              variant="outline"
+              onClick={goToToday}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 rounded-lg flex-1 sm:flex-none h-10"
+            >
+              Dzisiaj
+            </Button>
+
+            <Button
+              variant="default"
+              onClick={handleCreateQuickTask}
+              disabled={selectedProject === 'all'}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 md:px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg flex-1 sm:flex-none h-10"
+            >
+              <Plus className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Nowe zadanie</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
-                <TrendingUp className="w-6 h-6 text-blue-400" />
+          <CardContent className="p-3 md:p-6">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <div className="p-2 md:p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-white/60">Wszystkie zadania</p>
-                <p className="text-2xl font-bold text-white">{statsData.total}</p>
+                <p className="text-xs md:text-sm text-white/60">Wszystkie</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{statsData.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
-                <CheckCircle className="w-6 h-6 text-emerald-400" />
+          <CardContent className="p-3 md:p-6">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <div className="p-2 md:p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm text-white/60">Zakończone</p>
-                <p className="text-2xl font-bold text-white">{statsData.completed}</p>
+                <p className="text-xs md:text-sm text-white/60">Zakończone</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{statsData.completed}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-amber-500/20 border border-amber-500/30">
-                <Clock className="w-6 h-6 text-amber-400" />
+          <CardContent className="p-3 md:p-6">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <div className="p-2 md:p-3 rounded-lg bg-amber-500/20 border border-amber-500/30">
+                <Clock className="w-4 h-4 md:w-6 md:h-6 text-amber-400" />
               </div>
               <div>
-                <p className="text-sm text-white/60">W trakcie</p>
-                <p className="text-2xl font-bold text-white">{statsData.inProgress}</p>
+                <p className="text-xs md:text-sm text-white/60">W trakcie</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{statsData.inProgress}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
+          <CardContent className="p-3 md:p-6">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <div className="p-2 md:p-3 rounded-lg bg-red-500/20 border border-red-500/30">
+                <AlertTriangle className="w-4 h-4 md:w-6 md:h-6 text-red-400" />
               </div>
               <div>
-                <p className="text-sm text-white/60">Przeterminowane</p>
-                <p className="text-2xl font-bold text-white">{statsData.overdue}</p>
+                <p className="text-xs md:text-sm text-white/60">Przeterminowane</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{statsData.overdue}</p>
               </div>
             </div>
           </CardContent>
@@ -330,24 +334,24 @@ const UnifiedCalendarView: React.FC = () => {
       </div>
 
       {/* Calendar View Tabs */}
-      <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as CalendarView)} className="w-full">
-        <div className="flex justify-center mb-6">
-          <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
-            <TabsTrigger value="month" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+      <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as CalendarView)} className="w-full overflow-x-hidden">
+        <div className="flex justify-center mb-4 md:mb-6 overflow-x-auto max-w-full">
+          <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg flex-shrink-0">
+            <TabsTrigger value="month" className="flex items-center space-x-1 md:space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-2 md:px-4 py-2 flex-1 md:flex-none whitespace-nowrap">
               <Calendar className="w-4 h-4" />
-              <span>Miesiąc</span>
+              <span className="text-xs md:text-sm">Miesiąc</span>
             </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+            <TabsTrigger value="week" className="flex items-center space-x-1 md:space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-2 md:px-4 py-2 flex-1 md:flex-none whitespace-nowrap">
               <Calendar className="w-4 h-4" />
-              <span>Tydzień</span>
+              <span className="text-xs md:text-sm">Tydzień</span>
             </TabsTrigger>
-            <TabsTrigger value="day" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+            <TabsTrigger value="day" className="flex items-center space-x-1 md:space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-2 md:px-4 py-2 flex-1 md:flex-none whitespace-nowrap">
               <Calendar className="w-4 h-4" />
-              <span>Dzień</span>
+              <span className="text-xs md:text-sm">Dzień</span>
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
+            <TabsTrigger value="timeline" className="flex items-center space-x-1 md:space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-2 md:px-4 py-2 flex-1 md:flex-none whitespace-nowrap">
               <Layout className="w-4 h-4" />
-              <span>Oś czasu</span>
+              <span className="text-xs md:text-sm">Oś czasu</span>
             </TabsTrigger>
           </TabsList>
         </div>

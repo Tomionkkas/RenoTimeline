@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   onDrop: (taskId: string, newStatus: string) => void;
   onTaskClick: (task: Task) => void;
   onAddTask: (status: Task['status']) => void;
+  onStatusChange?: (taskId: string, newStatus: Task['status']) => void;
   color?: string;
   bgGradient?: string;
   icon?: React.ComponentType<{ className?: string }>;
@@ -39,12 +40,13 @@ const emptyStateMessages: { [key: string]: string } = {
   blocked: 'Brak zadań po terminie'
 };
 
-export function KanbanColumn({ 
-  status, 
-  tasks, 
-  onDrop, 
-  onTaskClick, 
+export function KanbanColumn({
+  status,
+  tasks,
+  onDrop,
+  onTaskClick,
   onAddTask,
+  onStatusChange,
   color = 'text-gray-300',
   bgGradient = 'from-gray-500/20 to-gray-600/20',
   icon: IconComponent,
@@ -71,10 +73,11 @@ export function KanbanColumn({
   return (
     <div
       ref={drop}
+      style={{ touchAction: 'pan-y' }}
       className={`
-        relative overflow-hidden rounded-2xl border 
-        ${isOverLimit 
-          ? 'border-red-500/50 bg-red-500/5' 
+        relative overflow-hidden rounded-2xl border
+        ${isOverLimit
+          ? 'border-red-500/50 bg-red-500/5'
           : 'border-gray-700/30 bg-gradient-to-b ' + bgGradient
         }
         backdrop-blur-sm
@@ -144,12 +147,16 @@ export function KanbanColumn({
         ) : (
           /* Tasks List */
           tasks.map((task, index) => (
-            <div 
+            <div
               key={task.id}
               className="animate-fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <DraggableTask task={task} onTaskClick={onTaskClick} />
+              <DraggableTask
+                task={task}
+                onTaskClick={onTaskClick}
+                onStatusChange={onStatusChange}
+              />
             </div>
           ))
         )}

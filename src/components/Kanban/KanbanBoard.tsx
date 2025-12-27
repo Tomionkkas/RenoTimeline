@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, Filter, Settings, Inbox, Zap, Eye, CheckCircle2, AlertTriangle, SlidersHorizontal } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useTeam } from '@/hooks/useTeam';
@@ -13,7 +15,7 @@ import { useAllTaskAssignments } from '@/hooks/useAllTaskAssignments';
 import CreateTaskDialog from './CreateTaskDialog';
 import { KanbanColumn } from "./KanbanColumn";
 import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend, TouchBackendOptions } from '@/lib/dnd-backend';
 // Workflow imports disabled - will be enabled when workflows are implemented
 // import { useWorkflowEvents } from '../../hooks/useWorkflowEvents';
 // import { WorkflowTriggers } from '../../lib/workflow/WorkflowTriggers';
@@ -62,6 +64,7 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
+  const isMobile = useIsMobile();
   const { tasks, loading, updateTask } = useTasks();
   const { projects } = useProjects();
   const { teamMembers } = useTeam();
@@ -263,7 +266,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={TouchBackend} options={TouchBackendOptions}>
     <div className="p-6 space-y-6">
       {/* Header Section */}
       <div className="space-y-4">
@@ -272,7 +275,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Tablica Zadań
             </h1>
-            <p className="text-gray-400 mt-1">Zarządzaj zadaniami zespołu efektywnie</p>
+            <p className="text-gray-400 mt-1">
+              {isMobile
+                ? 'Przytrzymaj zadanie, aby je przeciągnąć'
+                : 'Zarządzaj zadaniami zespołu efektywnie'}
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <Button onClick={() => handleShowCreateDialog()} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
@@ -307,34 +314,175 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
         </div>
 
         {/* Filters and Search */}
-        <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-          <div className="flex-1 min-w-[300px] relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Szukaj zadań..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2 border-l border-gray-700/50 pl-4">
-            <span className="text-gray-400 text-sm mr-2">Widok:</span>
-            <div className="flex bg-gray-700/50 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('board')}
-                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'board' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-              >
-                Tablica
-              </button>
-              <button
-                onClick={() => setViewMode('swimlanes')}
-                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'swimlanes' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-              >
-                Swimlanes
-              </button>
+        {isMobile ? (
+          /* Mobile: Search + Filter Sheet Button */
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Szukaj zadań..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="flex-1 border-gray-600/50 text-gray-400 hover:bg-gray-700/50">
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    Filtry
+                    {(selectedProject !== 'all' || priorityFilter !== 'all' || assigneeFilter !== 'all') && (
+                      <Badge className="ml-2 bg-blue-600 text-white">
+                        {[selectedProject !== 'all', priorityFilter !== 'all', assigneeFilter !== 'all'].filter(Boolean).length}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Filtry i ustawienia</SheetTitle>
+                  </SheetHeader>
+                  <div className="space-y-6 mt-6">
+                    {/* View Mode */}
+                    <div className="space-y-2">
+                      <Label>Widok</Label>
+                      <div className="flex bg-gray-700/50 rounded-lg p-1">
+                        <button
+                          onClick={() => setViewMode('board')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm transition-all ${viewMode === 'board' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                        >
+                          Tablica
+                        </button>
+                        <button
+                          onClick={() => setViewMode('swimlanes')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm transition-all ${viewMode === 'swimlanes' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                        >
+                          Swimlanes
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Project Filter */}
+                    {safeProjects.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Projekt</Label>
+                        <Select value={selectedProject} onValueChange={setSelectedProject}>
+                          <SelectTrigger className="w-full bg-gray-700/50 border-gray-600/50 text-white">
+                            <SelectValue placeholder="Wszystkie projekty" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Wszystkie projekty</SelectItem>
+                            {safeProjects.map(project => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Priority Filter */}
+                    <div className="space-y-2">
+                      <Label>Priorytet</Label>
+                      <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                        <SelectTrigger className="w-full bg-gray-700/50 border-gray-600/50 text-white">
+                          <SelectValue placeholder="Priorytet" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Wszystkie</SelectItem>
+                          <SelectItem value="1">Niski</SelectItem>
+                          <SelectItem value="2">Średni</SelectItem>
+                          <SelectItem value="3">Wysoki</SelectItem>
+                          <SelectItem value="4">Pilny</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Assignee Filter */}
+                    <div className="space-y-2">
+                      <Label>Przypisany</Label>
+                      <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                        <SelectTrigger className="w-full bg-gray-700/50 border-gray-600/50 text-white">
+                          <SelectValue placeholder="Przypisany" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Wszyscy</SelectItem>
+                          {teamMembers?.map(member => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.first_name} {member.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Clear Filters */}
+                    {(selectedProject !== 'all' || priorityFilter !== 'all' || assigneeFilter !== 'all') && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedProject('all');
+                          setPriorityFilter('all');
+                          setAssigneeFilter('all');
+                        }}
+                        className="w-full border-gray-600/50 text-gray-400 hover:bg-gray-700/50"
+                      >
+                        Wyczyść filtry
+                      </Button>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <div className="flex bg-gray-700/50 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('board')}
+                  className={`px-3 py-2 rounded-md text-xs transition-all ${viewMode === 'board' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400'}`}
+                >
+                  Tablica
+                </button>
+                <button
+                  onClick={() => setViewMode('swimlanes')}
+                  className={`px-3 py-2 rounded-md text-xs transition-all ${viewMode === 'swimlanes' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400'}`}
+                >
+                  Swimlanes
+                </button>
+              </div>
             </div>
           </div>
+        ) : (
+          /* Desktop: Horizontal Filter Bar */
+          <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+            <div className="flex-1 min-w-[300px] relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Szukaj zadań..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 border-l border-gray-700/50 pl-4">
+              <span className="text-gray-400 text-sm mr-2">Widok:</span>
+              <div className="flex bg-gray-700/50 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('board')}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'board' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Tablica
+                </button>
+                <button
+                  onClick={() => setViewMode('swimlanes')}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewMode === 'swimlanes' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Swimlanes
+                </button>
+              </div>
+            </div>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -442,28 +590,54 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
               Wyczyść filtry
             </Button>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Kanban Board */}
       {viewMode === 'board' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              title={column.title}
-              status={column.id}
-              tasks={tasksByStatus[column.id] || []}
-              onDrop={handleDrop}
-              onTaskClick={onTaskClick}
-              onAddTask={handleShowCreateDialog}
-              color={column.color}
-              bgGradient={column.bgGradient}
-              icon={column.icon}
-              limit={wipLimits[column.id]}
-            />
-          ))}
-        </div>
+        isMobile ? (
+          /* Mobile: Horizontal scroll with snap points */
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-6 px-6">
+            {columns.map((column) => (
+              <div key={column.id} className="min-w-[85vw] snap-center">
+                <KanbanColumn
+                  title={column.title}
+                  status={column.id}
+                  tasks={tasksByStatus[column.id] || []}
+                  onDrop={handleDrop}
+                  onTaskClick={onTaskClick}
+                  onAddTask={handleShowCreateDialog}
+                  onStatusChange={handleDrop}
+                  color={column.color}
+                  bgGradient={column.bgGradient}
+                  icon={column.icon}
+                  limit={wipLimits[column.id]}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Desktop: 4-column grid */
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {columns.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                title={column.title}
+                status={column.id}
+                tasks={tasksByStatus[column.id] || []}
+                onDrop={handleDrop}
+                onTaskClick={onTaskClick}
+                onAddTask={handleShowCreateDialog}
+                onStatusChange={handleDrop}
+                color={column.color}
+                bgGradient={column.bgGradient}
+                icon={column.icon}
+                limit={wipLimits[column.id]}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="space-y-8">
           {getUniqueAssignees().map((assignee) => {
@@ -509,6 +683,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
                       onDrop={handleDrop}
                       onTaskClick={onTaskClick}
                       onAddTask={handleShowCreateDialog}
+                      onStatusChange={handleDrop}
                       color={column.color}
                       bgGradient={column.bgGradient}
                       icon={column.icon}
@@ -544,6 +719,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ onTaskClick }) => {
                         onDrop={handleDrop}
                         onTaskClick={onTaskClick}
                         onAddTask={handleShowCreateDialog}
+                        onStatusChange={handleDrop}
                         color={column.color}
                         bgGradient={column.bgGradient}
                         icon={column.icon}

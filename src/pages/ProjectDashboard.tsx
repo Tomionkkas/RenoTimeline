@@ -36,6 +36,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useWorkflows } from '@/hooks/useWorkflows';
 import { useWorkflowExecution } from '@/hooks/useWorkflowExecution';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Status translation utility
 const getStatusDisplay = (status: string | null | undefined) => {
@@ -107,78 +108,78 @@ const ProjectOverview = ({ project, projectId }: { project: any, projectId: stri
   const budgetPercentage = totalBudget > 0 ? Math.round((budgetUsed / totalBudget) * 100) : 0;
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-4 md:space-y-8 animate-fadeIn">
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-105">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">Zadania</CardTitle>
-            <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
-              <Target className="h-5 w-5 text-blue-400" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-white/90">Zadania</CardTitle>
+            <div className="p-1.5 md:p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
+              <Target className="h-4 w-4 md:h-5 md:w-5 text-blue-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white mb-1">{tasks.length}</div>
-            <div className="flex items-center text-xs">
+          <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
+            <div className="text-2xl md:text-3xl font-bold text-white mb-1">{tasks.length}</div>
+            <div className="flex items-center text-[10px] md:text-xs">
               <span className="text-blue-300">{completedTasks} ukończone</span>
             </div>
           </CardContent>
         </Card>
         
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 transform hover:scale-105" style={{ animationDelay: '100ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">Członkowie zespołu</CardTitle>
-            <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/30">
-              <Star className="h-5 w-5 text-purple-400" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-white/90">Zespół</CardTitle>
+            <div className="p-1.5 md:p-2 bg-purple-500/20 rounded-lg border border-purple-500/30">
+              <Star className="h-4 w-4 md:h-5 md:w-5 text-purple-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white mb-1">{teamMembers.length}</div>
-            <p className="text-xs text-purple-300">Aktywni członkowie</p>
+          <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
+            <div className="text-2xl md:text-3xl font-bold text-white mb-1">{teamMembers.length}</div>
+            <p className="text-[10px] md:text-xs text-purple-300">Aktywni</p>
           </CardContent>
         </Card>
-        
+
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 transform hover:scale-105" style={{ animationDelay: '200ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">Postęp</CardTitle>
-            <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
-              <TrendingUp className="h-5 w-5 text-emerald-400" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-white/90">Postęp</CardTitle>
+            <div className="p-1.5 md:p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white mb-1">{progress}%</div>
-            <div className="w-full bg-white/10 rounded-full h-3 mt-2 backdrop-blur-sm overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-700 ease-out shadow-lg" 
+          <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
+            <div className="text-2xl md:text-3xl font-bold text-white mb-1">{progress}%</div>
+            <div className="w-full bg-white/10 rounded-full h-2 md:h-3 mt-2 backdrop-blur-sm overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 md:h-3 rounded-full transition-all duration-700 ease-out shadow-lg"
                 style={{ width: `${progress}%` }}
               >
                 <div className="h-full bg-gradient-to-r from-white/20 to-transparent rounded-full"></div>
             </div>
             </div>
-            <p className="text-xs text-emerald-300 mt-2">{completedTasks} z {tasks.length} zadań</p>
+            <p className="text-[10px] md:text-xs text-emerald-300 mt-2">{completedTasks} z {tasks.length}</p>
           </CardContent>
         </Card>
-        
+
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 transform hover:scale-105" style={{ animationDelay: '300ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">Wykorzystany budżet</CardTitle>
-            <div className="p-2 bg-amber-500/20 rounded-lg border border-amber-500/30">
-              <DollarSign className="h-5 w-5 text-amber-400" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6">
+            <CardTitle className="text-xs md:text-sm font-medium text-white/90">Budżet</CardTitle>
+            <div className="p-1.5 md:p-2 bg-amber-500/20 rounded-lg border border-amber-500/30">
+              <DollarSign className="h-4 w-4 md:h-5 md:w-5 text-amber-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white mb-1">
+          <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
+            <div className="text-xl md:text-3xl font-bold text-white mb-1">
               {budgetUsed.toLocaleString()} zł
             </div>
-            <p className="text-xs text-amber-300">
-              {totalBudget > 0 ? `${budgetPercentage}% z całości` : 'Nie określono budżetu'}
+            <p className="text-[10px] md:text-xs text-amber-300">
+              {totalBudget > 0 ? `${budgetPercentage}%` : 'Nie określono'}
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Info Cards - Only 2 columns now */}
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-8 grid-cols-1 md:grid-cols-2">
         {/* Project Information */}
         <Card className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl">
           <CardHeader className="pb-4">
@@ -981,7 +982,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = () => {
 
   return (
     <BudgetContext.Provider value={{ budgetItems, setBudgetItems, totalSpent }}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-x-hidden max-w-full">
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)] animate-pulse-slow"></div>
@@ -992,47 +993,47 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = () => {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl relative z-10 w-full overflow-x-hidden">
           {/* Enhanced Header */}
-          <div className="flex items-center justify-between mb-8 animate-fadeIn">
-            <div className="flex items-center space-x-6">
-              <Button 
-                variant="ghost" 
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-8 animate-fadeIn gap-4">
+            <div className="flex flex-col space-y-3">
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/', { state: { tab: 'projects' } })}
-                className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300 border border-white/20 hover:border-white/30 backdrop-blur-sm"
+                className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300 border border-white/20 hover:border-white/30 backdrop-blur-sm w-fit"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Powrót do Dashboard
+                <span className="text-sm md:text-base">Powrót</span>
               </Button>
               <div>
-                <h1 className="text-4xl font-bold gradient-text-animated mb-2">
+                <h1 className="text-2xl md:text-4xl font-bold gradient-text-animated mb-1 md:mb-2">
                   {project.name}
                 </h1>
-                <p className="text-white/60 text-lg">{project.description}</p>
+                <p className="text-white/60 text-sm md:text-lg">{project.description}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Badge className={`${getStatusDisplay(project.status).bgColor} ${getStatusDisplay(project.status).color} border-0 px-4 py-2 backdrop-blur-sm font-medium`}>
+              <Badge className={`${getStatusDisplay(project.status).bgColor} ${getStatusDisplay(project.status).color} border-0 px-3 md:px-4 py-1.5 md:py-2 backdrop-blur-sm font-medium text-xs md:text-sm`}>
                 {getStatusDisplay(project.status).label}
               </Badge>
             </div>
           </div>
 
           {/* Enhanced Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-center mb-6">
-              <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full overflow-x-hidden">
+            <div className="flex justify-center mb-4 md:mb-6 overflow-x-auto max-w-full">
+              <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg flex-shrink-0">
                 {tabs.map((tab, index) => {
                   const Icon = tab.icon;
                   return (
-                    <TabsTrigger 
-                      key={tab.id} 
+                    <TabsTrigger
+                      key={tab.id}
                       value={tab.id}
-                      className="flex items-center space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2"
+                      className="flex items-center space-x-1 md:space-x-2 bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-2 md:px-4 py-2 flex-1 md:flex-none whitespace-nowrap"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <Icon className="w-4 h-4" />
-                      <span>{tab.label}</span>
+                      <span className="text-xs md:text-sm">{tab.label}</span>
                     </TabsTrigger>
                   );
                 })}

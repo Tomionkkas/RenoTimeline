@@ -1,11 +1,22 @@
 import { useDrag } from 'react-dnd';
 import { Task } from '@/hooks/useTasks';
 import { Badge } from '@/components/ui/badge';
-import { User, Clock, Calendar, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Clock, Calendar, Star, MoveRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { useTeam } from '@/hooks/useTeam';
 import { useTaskAssignments } from '@/hooks/useTaskAssignments';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { useState } from 'react';
 
 export const ItemTypes = {
   TASK: 'task',
@@ -14,6 +25,7 @@ export const ItemTypes = {
 interface DraggableTaskProps {
   task: Task;
   onTaskClick: (task: Task) => void;
+  onStatusChange?: (taskId: string, newStatus: Task['status']) => void;
 }
 
 const getPriorityInfo = (priority: number): { label: string; styles: { bg: string, text: string, border: string } } => {
@@ -37,7 +49,9 @@ const statusBorderColors: { [key: string]: string } = {
   blocked: 'border-l-red-400',
 };
 
-export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
+export function DraggableTask({ task, onTaskClick, onStatusChange }: DraggableTaskProps) {
+  const isMobile = useIsMobile();
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const { teamMembers } = useTeam();
   const { assignments } = useTaskAssignments(task.id);
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -79,8 +93,10 @@ export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
     <div
       ref={drag}
       onClick={() => onTaskClick(task)}
+      style={{ touchAction: 'none' }}
       className={`
-        group relative p-4 bg-gradient-to-br from-gray-800/80 to-gray-900/80 
+        draggable-item drag-handle
+        group relative p-4 bg-gradient-to-br from-gray-800/80 to-gray-900/80
         backdrop-blur-sm rounded-xl border-l-4 ${borderColor}
         border border-gray-700/30 hover:border-gray-600/50
         hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1
@@ -229,6 +245,92 @@ export function DraggableTask({ task, onTaskClick }: DraggableTaskProps) {
           </Badge>
         </div>
       </div>
+
+      {/* Mobile: Status Change Button */}
+      {isMobile && onStatusChange && (
+        <div className="mt-3 pt-3 border-t border-gray-700/30">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              setStatusSheetOpen(true);
+            }}
+          >
+            <MoveRight className="w-4 h-4 mr-2" />
+            Zmień status
+          </Button>
+          <Sheet open={statusSheetOpen} onOpenChange={setStatusSheetOpen}>
+            <SheetContent side="bottom" className="h-auto" aria-describedby="status-change-description">
+              <SheetHeader>
+                <SheetTitle>Zmień status zadania</SheetTitle>
+                <SheetDescription id="status-change-description">
+                  {task.name}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="grid grid-cols-1 gap-3 mt-6 pb-4">
+                <Button
+                  variant={task.status === 'pending' ? 'default' : 'outline'}
+                  className="w-full h-14 justify-start bg-slate-500/20 hover:bg-slate-500/30 border-slate-500/50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(task.id, 'pending');
+                    setStatusSheetOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-10 bg-slate-400 rounded-full" />
+                    <span className="text-base">Do zrobienia</span>
+                  </div>
+                </Button>
+                <Button
+                  variant={task.status === 'in_progress' ? 'default' : 'outline'}
+                  className="w-full h-14 justify-start bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(task.id, 'in_progress');
+                    setStatusSheetOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-10 bg-blue-400 rounded-full" />
+                    <span className="text-base">W toku</span>
+                  </div>
+                </Button>
+                <Button
+                  variant={task.status === 'completed' ? 'default' : 'outline'}
+                  className="w-full h-14 justify-start bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(task.id, 'completed');
+                    setStatusSheetOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-10 bg-emerald-400 rounded-full" />
+                    <span className="text-base">Ukończone</span>
+                  </div>
+                </Button>
+                <Button
+                  variant={task.status === 'blocked' ? 'default' : 'outline'}
+                  className="w-full h-14 justify-start bg-red-500/20 hover:bg-red-500/30 border-red-500/50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(task.id, 'blocked');
+                    setStatusSheetOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-10 bg-red-400 rounded-full" />
+                    <span className="text-base">Zablokowane</span>
+                  </div>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
 
       {/* Bottom indicators */}
       <div className="flex items-center justify-end mt-2 pt-2 border-t border-gray-700/30">

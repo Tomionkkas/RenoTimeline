@@ -47,14 +47,17 @@ import { GreetingHeader } from '@/components/Dashboard/GreetingHeader';
 import { FocusCard } from '@/components/Dashboard/FocusCard';
 import { CommandCenter } from '@/components/CommandCenter/CommandCenter';
 import { FeedbackFeed } from '@/components/Feedback/FeedbackFeed';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileBottomNav } from '@/components/ui/mobile-bottom-nav';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [platformKey, setPlatformKey] = useState('Ctrl');
-  
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 || 
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0 ||
                     navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
       setPlatformKey(isMac ? '⌘' : 'Ctrl');
     }
@@ -182,7 +185,7 @@ const Dashboard = () => {
   return (
     <>
     <PageTransition isActive={isTransitioning}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-x-hidden max-w-full">
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)] animate-pulse-slow"></div>
@@ -195,13 +198,13 @@ const Dashboard = () => {
 
         {/* Header */}
         <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/5 border-b border-white/10 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14 md:h-16">
               {/* Logo and Search */}
               <div className="flex items-center space-x-8">
                 <div className="flex items-center space-x-3">
                   <img src="/renotimeline-logo.png" alt="RenoTimeline Logo" className="h-8 w-auto" />
-                  <h1 className="text-xl font-bold gradient-text-animated">RenoTimeline</h1>
+                  <h1 className="hidden md:block text-xl font-bold gradient-text-animated">RenoTimeline</h1>
                 </div>
                 <div className="hidden md:block">
                   <Button
@@ -216,19 +219,31 @@ const Dashboard = () => {
                     </kbd>
                   </Button>
                 </div>
+                {/* Mobile Search Icon */}
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white/70 hover:text-white hover:bg-white/10 min-h-[44px] min-w-[44px]"
+                    onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
 
               {/* User Menu */}
-              <div className="flex items-center space-x-4">
-                <span className="text-white/80 text-sm">Witaj, {user?.user_metadata?.first_name || 'Użytkowniku'}!</span>
+              <div className="flex items-center space-x-2 md:space-x-4">
+                <span className="hidden md:inline text-white/80 text-sm">Witaj, {user?.user_metadata?.first_name || 'Użytkowniku'}!</span>
                 <Button
                   onClick={handleSignOut}
                   variant="ghost"
-                  size="sm"
-                  className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+                  size={isMobile ? "icon" : "sm"}
+                  className={`text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300 ${isMobile ? 'min-h-[44px] min-w-[44px]' : ''}`}
+                  title="Wyloguj"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Wyloguj
+                  <LogOut className={`w-4 h-4 ${isMobile ? '' : 'mr-2'}`} />
+                  <span className="hidden md:inline">Wyloguj</span>
                 </Button>
               </div>
             </div>
@@ -236,10 +251,12 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
-            <div className="flex justify-center mb-8">
-              <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg">
+        <main className={`max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 w-full overflow-x-hidden ${isMobile ? 'pb-24' : ''}`}>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-8 w-full overflow-x-hidden">
+            {/* Desktop Navigation */}
+            {!isMobile && (
+              <div className="flex justify-center mb-8 overflow-x-auto overflow-y-hidden max-w-full px-2">
+                <TabsList className="glassmorphic-card backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inline-flex p-1 rounded-lg flex-shrink-0">
                 <TabsTrigger value="dashboard" className="flex items-center space-x-2 tab-transition bg-transparent data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white rounded-md transition-all duration-300 px-4 py-2">
                   <LayoutDashboard className="w-4 h-4" />
                   <span className="hidden sm:inline">Dashboard</span>
@@ -282,6 +299,7 @@ const Dashboard = () => {
                 </TabsTrigger>
               </TabsList>
             </div>
+            )}
 
             <TabsContent value="dashboard" className="space-y-8 animate-fadeIn">
               <GreetingHeader />
@@ -359,6 +377,28 @@ const Dashboard = () => {
     )}
     <Toaster position="top-center" reverseOrder={false} />
     <CommandCenter />
+
+    {/* Mobile Bottom Navigation */}
+    {isMobile && (
+      <MobileBottomNav
+        items={[
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'projects', label: 'Projekty', icon: FolderOpen },
+          { id: 'kanban', label: 'Zadania', icon: Kanban },
+          { id: 'calendar', label: 'Kalendarz', icon: Calendar },
+        ]}
+        moreMenuItems={[
+          { id: 'files', label: 'Pliki', icon: Folder },
+          { id: 'team', label: 'Zespół', icon: Users },
+          { id: 'reports', label: 'Raporty', icon: BarChart3 },
+          { id: 'notifications', label: 'Powiadomienia', icon: Bell },
+          { id: 'feedback', label: 'Opinie', icon: MessageSquare },
+          { id: 'settings', label: 'Ustawienia', icon: Settings },
+        ]}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
+    )}
     </>
   );
 };
